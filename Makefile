@@ -1,7 +1,5 @@
 CC=cc
-LINKER=cc
-CFLAGS=-std=c99 -Wall -Wextra -pedantic
-LDFLAGS=-L. -lstaple -shared
+CFLAGS=-fPIC -std=c99 -Wall -Wextra -pedantic
 
 # All SRCDIR subdirectories that contain source files
 DIRS=.
@@ -12,30 +10,36 @@ SRCDIRS:=$(foreach dir, $(DIRS), $(addprefix $(SRCDIR)/, $(dir)))
 OBJDIRS:=$(foreach dir, $(DIRS), $(addprefix $(OBJDIR)/, $(dir)))
 SRCS:=$(foreach dir, $(SRCDIRS), $(wildcard $(dir)/*.c))
 OBJS:=$(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SRCS:.c=.o))
-TARGET=libtsp
-DESTDIR=
-PREFIX=/usr/local
-MANPREFIX=$(PREFIX)/share/man
 
-.PHONY: directories all libtsp clean debug
+.PHONY: directories all clean debug
 
-all: directories libtsp
+all: task1
 
 directories:
 	mkdir -p $(SRCDIRS) $(OBJDIRS)
 
-libtsp: libstaple.so $(OBJS)
-	$(LINKER) $(OBJS) $(LDFLAGS) -o $(TARGET).so
+libtsp.a: directories libstaple.a $(OBJS)
+	@echo 'CREATE libtsp.a' >script.ar
+	@echo 'ADDLIB libstaple.a' >>script.ar
+	@echo 'ADDMOD $(OBJS)' >>script.ar
+	@echo 'SAVE' >>script.ar
+	@echo 'END' >>script.ar
+	$(AR) -M <script.ar
+	@$(RM) script.ar
 
-libstaple.so: libstaple
-	$(MAKE) -C $^
-	ln -s libstaple/libstaple.so libstaple.so
+libstaple.a: libstaple
+	$(MAKE) -C $^ ABORT=1
+	ln -sf libstaple/libstaple.a libstaple.a
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c $(CFLAGS) $^ -o $@
 
 clean:
-	$(RM) -- $(OBJS) libstaple.so
+	$(RM) -- $(OBJS) libstaple.a
+	$(MAKE) -C task1 clean
 
 debug: CFLAGS += -g -Og
 debug: clean all
+
+task%: libtsp.a libstaple.a
+	$(MAKE) -C $@
