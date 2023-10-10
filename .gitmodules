@@ -1,0 +1,3 @@
+[submodule "libstaple"]
+	path = libstaple
+	url = git@github.com:Randoragon/libstaple.git
