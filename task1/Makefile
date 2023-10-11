@@ -19,7 +19,7 @@ TARGET = task1
 all: directories $(TARGET)
 
 directories:
-	mkdir -p $(SRCDIRS) $(OBJDIRS)
+	@mkdir -p $(SRCDIRS) $(OBJDIRS)
 
 $(TARGET): $(OBJS)
 	$(LINKER) $(OBJS) $(LDFLAGS) -o $(TARGET)
