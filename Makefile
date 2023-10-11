@@ -16,12 +16,12 @@ TASKS = task1
 
 .PHONY: directories all clean debug
 
-all: $(TASKS)
+all: directories $(TASKS)
 
 directories:
-	mkdir -p $(SRCDIRS) $(OBJDIRS)
+	@mkdir -p $(SRCDIRS) $(OBJDIRS)
 
-$(LIBTSP): directories $(LIBSTAPLE) $(OBJS)
+$(LIBTSP): $(LIBSTAPLE) $(OBJS)
 	@echo 'CREATE $(LIBTSP)' >script.ar
 	@echo 'ADDLIB $(LIBSTAPLE)' >>script.ar
 	@echo 'ADDMOD $(OBJS)' >>script.ar
@@ -31,18 +31,18 @@ $(LIBTSP): directories $(LIBSTAPLE) $(OBJS)
 	@$(RM) script.ar
 	@for t in $(TASKS); do $(MAKE) -C "$$t" clean; done
 
-$(LIBSTAPLE): libstaple
-	$(MAKE) -C $^ ABORT=1
+$(LIBSTAPLE):
+	@$(MAKE) -C libstaple ABORT=1
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c $(CFLAGS) $^ -o $@
 
 clean:
 	$(RM) -- $(LIBTSP) $(OBJS)
-	for t in $(TASKS); do $(MAKE) -C "$$t" clean; done
+	@for t in $(TASKS); do $(MAKE) -C "$$t" clean; done
 
 debug: CFLAGS += -g -Og
 debug: clean all
 
 task%: $(LIBTSP)
-	$(MAKE) -C $@
+	@$(MAKE) -C $@
