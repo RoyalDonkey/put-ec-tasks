@@ -12,10 +12,11 @@ SRCS := $(foreach dir, $(SRCDIRS), $(wildcard $(dir)/*.c))
 OBJS := $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SRCS:.c=.o))
 LIBTSP = libtsp.a
 LIBSTAPLE = libstaple/libstaple.a
+TASKS = task1
 
 .PHONY: directories all clean debug
 
-all: task1
+all: $(TASKS)
 
 directories:
 	mkdir -p $(SRCDIRS) $(OBJDIRS)
@@ -28,6 +29,7 @@ $(LIBTSP): directories $(LIBSTAPLE) $(OBJS)
 	@echo 'END' >>script.ar
 	$(AR) -M <script.ar
 	@$(RM) script.ar
+	@for t in $(TASKS); do $(MAKE) -C "$$t" clean; done
 
 $(LIBSTAPLE): libstaple
 	$(MAKE) -C $^ ABORT=1
@@ -37,7 +39,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 
 clean:
 	$(RM) -- $(LIBTSP) $(OBJS)
-	$(MAKE) -C task1 clean
+	for t in $(TASKS); do $(MAKE) -C "$$t" clean; done
 
 debug: CFLAGS += -g -Og
 debug: clean all
