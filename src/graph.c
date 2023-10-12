@@ -7,20 +7,18 @@
 int _print_node(const void *ptr);
 
 
-struct tsp_graph *tsp_graph_read(const char *fpath)
+struct sp_stack *tsp_nodes_read(const char *fpath)
 {
 	FILE *f;
-	struct tsp_graph *graph;
+	struct sp_stack *nodes;
 
-	assert(sp_is_abort());
-	graph = malloc_or_die(sizeof(struct tsp_graph));
-	graph->nodes_active = sp_stack_create(sizeof(struct tsp_node), 200);
-	graph->nodes_vacant = sp_stack_create(sizeof(struct tsp_node), 200);
+	nodes = sp_stack_create(sizeof(struct tsp_node), 200);
 
 	f = fopen(fpath, "r");
 	if (f == NULL) {
 		error(("file not found: %s", fpath));
 	}
+
 	for (size_t lineno = 1;; ++lineno) {
 		struct tsp_node node;
 		int n;
@@ -35,9 +33,19 @@ struct tsp_graph *tsp_graph_read(const char *fpath)
 		}
 
 		/* Append new node to stack */
-		sp_stack_push(graph->nodes_vacant, &node);
+		sp_stack_push(nodes, &node);
 	}
 	fclose(f);
+	return nodes;
+}
+
+struct tsp_graph *tsp_graph_create(const struct sp_stack *nodes)
+{
+	struct tsp_graph *graph;
+	graph = malloc_or_die(sizeof(struct tsp_graph));
+	graph->nodes_active = sp_stack_create(sizeof(struct tsp_node), 200);
+	graph->nodes_vacant = sp_stack_create(sizeof(struct tsp_node), 200);
+	sp_stack_copy(graph->nodes_vacant, nodes, NULL);
 	return graph;
 }
 
