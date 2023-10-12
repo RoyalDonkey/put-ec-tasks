@@ -79,7 +79,33 @@ int _print_node(const void *ptr)
 	return 0;
 }
 
-/* Pick `n_nodes` nodes randomly and mark as active. */
+
+/* Deactivates all nodes in a graph. */
+void tsp_graph_deactivate_all(struct tsp_graph *graph)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+
+	while (active->size != 0) {
+		struct tsp_node node;
+		node = *(struct tsp_node*)sp_stack_peek(active);
+		sp_stack_pop(active, NULL);
+		sp_stack_push(vacant, &node);
+	}
+}
+
+/* Activates a single node in a graph. */
+void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+
+	const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, idx);
+	sp_stack_qremove(vacant, idx, NULL);
+	sp_stack_push(active, &node);
+}
+
+/* Activates `n_nodes` random nodes in graph. */
 void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 {
 	struct sp_stack *const vacant = graph->nodes_vacant;
