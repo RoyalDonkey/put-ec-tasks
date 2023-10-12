@@ -12,12 +12,19 @@ struct tsp_node {
 	int cost;
 };
 
+struct tsp_graph {
+	/* The structure I use for nodes is called a stack,
+	 * but it has the properties of a normal array. */
+	struct sp_stack *nodes_active;  /* Nodes chosen for the route */
+	struct sp_stack *nodes_vacant;  /* Remaining, unchosen nodes */
+};
+
 
 /* Functions */
-struct sp_stack *tsp_graph_read(const char *fpath);
-void tsp_graph_destroy(struct sp_stack *graph);
+struct tsp_graph *tsp_graph_read(const char *fpath);
+void tsp_graph_destroy(struct tsp_graph *graph);
 void tsp_node_print(const struct tsp_node *node);
-void tsp_graph_print(const struct sp_stack *graph);
+void tsp_graph_print(const struct tsp_graph *graph);
 
 
 #endif /* TSP_GRAPH_H */
