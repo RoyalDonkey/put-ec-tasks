@@ -78,7 +78,7 @@ void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 	struct sp_stack *const active = graph->nodes_active;
 
 	if (vacant->size < n_nodes) {
-		warn(("not enough vacant nodes, truncating"));
+		warn(("tsp_graph_activate_function: not enough vacant nodes, truncating"));
 		n_nodes = vacant->size;
 	}
 	for (size_t i = 0; i < n_nodes; i++) {

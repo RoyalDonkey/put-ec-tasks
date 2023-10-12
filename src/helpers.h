@@ -11,10 +11,12 @@
 	fputc('\n', stderr); \
 } while (0)
 #define warn(x) do { \
+	fprintf(stderr, "%s:%u: warning: ", __FILE__, __LINE__); \
 	stderr_printf x; \
 	fputc('\n', stderr); \
 } while (0)
 #define error(x) do { \
+	fprintf(stderr, "%s:%u: error: ", __FILE__, __LINE__); \
 	stderr_printf x; \
 	fputc('\n', stderr); \
 	exit(EXIT_FAILURE); \
