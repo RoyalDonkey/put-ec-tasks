@@ -24,6 +24,8 @@
 /* Functions */
 void stderr_printf(const char *fmt, ...);
 void *malloc_or_die(size_t n_bytes);
+void random_seed(int seed);
+int randint(int min, int max);
 
 
 #endif /* TSP_HELPERS_H */

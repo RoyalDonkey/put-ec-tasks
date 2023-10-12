@@ -26,5 +26,7 @@ void tsp_graph_destroy(struct tsp_graph *graph);
 void tsp_node_print(const struct tsp_node *node);
 void tsp_graph_print(const struct tsp_graph *graph);
 
+void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes);
+
 
 #endif /* TSP_GRAPH_H */
