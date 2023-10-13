@@ -2,6 +2,7 @@
 #include "helpers.h"
 #include "../libstaple/src/staple.h"
 #include <stdlib.h>
+#include <unistd.h>
 
 /* Forward declarations */
 int _print_node(const void *ptr);
@@ -49,6 +50,12 @@ struct tsp_graph *tsp_graph_create(const struct sp_stack *nodes)
 	return graph;
 }
 
+void tsp_graph_copy(struct tsp_graph *dest, const struct tsp_graph *src)
+{
+	sp_stack_copy(dest->nodes_active, src->nodes_active, NULL);
+	sp_stack_copy(dest->nodes_vacant, src->nodes_vacant, NULL);
+}
+
 void tsp_graph_destroy(struct tsp_graph *graph)
 {
 	sp_stack_destroy(graph->nodes_active, NULL);
@@ -68,18 +75,113 @@ void tsp_nodes_print(const struct sp_stack *nodes)
 	printf("score: %lu\n", tsp_nodes_evaluate(nodes));
 }
 
-void tsp_nodes_export(const struct sp_stack *nodes, const char *fpath)
+void tsp_graph_to_txt(const struct tsp_graph *graph, const char *fpath)
 {
 	FILE *const f = fopen(fpath, "w");
 	if (f == NULL) {
 		warn(("tsp_nodes_export: failed to open file %s for writing\n"));
 		return;
 	}
-	for (size_t i = 0; i < nodes->size; i++) {
-		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
-		fprintf(f, "%d;%d;%d\n", node.x, node.y, node.cost);
-	}
+	/* for (size_t i = 0; i < nodes->size; i++) { */
+	/* 	const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i); */
+	/* 	fprintf(f, "%d;%d;%d\n", node.x, node.y, node.cost); */
+	/* } */
 	fclose(f);
+}
+
+/* Requires graphviz's "neato" utility. */
+void tsp_graph_to_pdf(const struct tsp_graph *graph, const char *fpath)
+{
+	const char graphviz_head[] =
+		"graph {\n"
+		"\tsize = \"7,5\";\n";
+	const char graphviz_vacant_node_fmt[] =
+		"\tnode%d [\n"
+		"\t\tlabel = \"%d\"\n"
+		"\t\tpos = \"%d,%d!\"\n"
+		"\t\tfixedsize = \"true\"\n"
+		"\t\twidth = \"25\"\n"
+		"\t\tshape = \"circle\"\n"
+		"\t\tstyle = \"filled\"\n"
+		"\t\tcolor = \"black\"\n"
+		"\t\tfillcolor = \"black\"\n"
+		"\t\tfontcolor = \"white\"\n"
+		"\t\tfontsize = \"600\"\n"
+		"\t];\n";
+	const char graphviz_active_node_fmt[] =
+		"\tnode%d [\n"
+		"\t\tlabel = \"%d\"\n"
+		"\t\tpos = \"%d,%d!\"\n"
+		"\t\tfixedsize = \"true\"\n"
+		"\t\twidth = \"80\"\n"
+		"\t\tshape = \"circle\"\n"
+		"\t\tstyle = \"filled\"\n"
+		"\t\tcolor = \"blue\"\n"
+		"\t\tfillcolor = \"blue\"\n"
+		"\t\tfontcolor = \"white\"\n"
+		"\t\tfontsize = \"2000\"\n"
+		"\t];\n";
+	const char graphviz_edge_fmt[] =
+		"\tnode%d -- node%d [\n"
+		"\t\tcolor = \"blue\"\n"
+		"\t\tpenwidth = 3\n"
+		"\t];\n";
+	const char graphviz_tail[] = "}\n";
+
+	char buf[1024];  /* Auxiliary buffer */
+	char tmp_fname[] = ".neato.XXXXXX";
+	const int fd = mkstemp(tmp_fname);
+
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+
+	if (fd == -1) {
+		perror("failed to open temporary file");
+		return;
+	}
+
+	write(fd, graphviz_head, sizeof(graphviz_head) - 1);
+
+	/* Draw vacant nodes */
+	for (size_t i = 0; i < vacant->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, i);
+		const size_t nbytes = sprintf(
+			buf, graphviz_vacant_node_fmt,
+			(int)(i + active->size), node.cost, node.x, node.y
+		);
+		write(fd, buf, nbytes);
+	}
+
+	/* Draw active nodes */
+	for (size_t i = 0; i < active->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(active, i);
+		const size_t nbytes = sprintf(
+			buf, graphviz_active_node_fmt,
+			(int)i, node.cost, node.x, node.y
+		);
+		write(fd, buf, nbytes);
+	}
+
+	/* Draw edges between active nodes */
+	for (size_t i = 1; i < active->size; i++) {
+		const size_t nbytes = sprintf(
+			buf, graphviz_edge_fmt,
+			(int)(i - 1), (int)i
+		);
+		write(fd, buf, nbytes);
+	}
+	{
+		const size_t nbytes = sprintf(
+			buf, graphviz_edge_fmt,
+			0, (int)active->size - 1
+		);
+		write(fd, buf, nbytes);
+	}
+
+	write(fd, graphviz_tail, sizeof(graphviz_tail) - 1);
+	sprintf(buf, "neato -Tpdf '%s' >'%s'", tmp_fname, fpath);
+	system(buf);  /* I am aware this is a horrible security leak -- doesn't matter, it's just a uni project */
+	unlink(tmp_fname);
 }
 
 void tsp_graph_print(const struct tsp_graph *graph)

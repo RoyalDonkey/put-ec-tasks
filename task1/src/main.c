@@ -25,13 +25,12 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 	unsigned long score_min[ARRLEN(files)];
 	unsigned long score_max[ARRLEN(files)];
 	double        score_sum[ARRLEN(files)];
-	struct sp_stack *best_solution[ARRLEN(files)];
+	struct tsp_graph *best_solution[ARRLEN(files)];
 
 	for (size_t i = 0; i < ARRLEN(files); i++) {
 		score_min[i] = ULONG_MAX;
 		score_max[i] = 0;
 		score_sum[i] = 0.0;
-		best_solution[i] = sp_stack_create(sizeof(struct tsp_node), 100);
 	}
 
 	random_seed(0);
@@ -40,6 +39,7 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 		struct sp_stack *const nodes = tsp_nodes_read(files[i]);
 		struct tsp_graph *const graph = tsp_graph_create(nodes);
 		const size_t target_size = nodes->size / 2;
+		best_solution[i] = tsp_graph_create(nodes);
 
 		/* 200 solutions starting from each node */
 		for (int j = 0; j < 200; j++) {
@@ -51,7 +51,7 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 			score_min[i] = MIN(score, score_min[i]);
 			if (score > score_max[i]) {
 				score_max[i] = score;
-				sp_stack_copy(best_solution[i], graph->nodes_active, NULL);
+				tsp_graph_copy(best_solution[i], graph);
 			}
 			score_sum[i] += score;
 		}
@@ -65,7 +65,7 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 			score_min[i] = MIN(score, score_min[i]);
 			if (score > score_max[i]) {
 				score_max[i] = score;
-				sp_stack_copy(best_solution[i], graph->nodes_active, NULL);
+				tsp_graph_copy(best_solution[i], graph);
 			}
 			score_sum[i] += score;
 		}
@@ -85,9 +85,11 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 			score_max[i]
 		);
 		strncpy(instance_fpath, files[i], ARRLEN(instance_fpath));
-		sprintf(out_fname, "best_%s_%s", algo_name, basename(instance_fpath));
-		tsp_nodes_export(best_solution[i], out_fname);
-		sp_stack_destroy(best_solution[i], NULL);
+		*strrchr(instance_fpath, '.') = '\0';  /* Trim file extension */
+		sprintf(out_fname, "best_%s_%s.pdf", algo_name, basename(instance_fpath));
+		/* tsp_nodes_to_csv(best_solution[i], out_fname); */
+		tsp_graph_to_pdf(best_solution[i], out_fname);
+		tsp_graph_destroy(best_solution[i]);
 	}
 }
 
