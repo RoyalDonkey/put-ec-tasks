@@ -101,9 +101,9 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 		);
 		strncpy(instance_fpath, files[i], ARRLEN(instance_fpath));
 		*strrchr(instance_fpath, '.') = '\0';  /* Trim file extension */
-		sprintf(out_fname, "best_%s_%s.graph", algo_name, basename(instance_fpath));
+		sprintf(out_fname, "results/best_%s_%s.graph", algo_name, basename(instance_fpath));
 		tsp_graph_export(best_solution[i], out_fname);
-		sprintf(out_fname, "best_%s_%s.pdf", algo_name, basename(instance_fpath));
+		sprintf(out_fname, "results/best_%s_%s.pdf", algo_name, basename(instance_fpath));
 		tsp_graph_to_pdf(best_solution[i], out_fname);
 		tsp_graph_destroy(best_solution[i]);
 	}
