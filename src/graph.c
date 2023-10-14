@@ -50,6 +50,57 @@ struct tsp_graph *tsp_graph_create(const struct sp_stack *nodes)
 	return graph;
 }
 
+struct tsp_graph *tsp_graph_import(const char *fpath)
+{
+	FILE *f;
+	struct tsp_graph *const graph = malloc_or_die(sizeof(struct tsp_graph));
+	int n_vacant, n_active, n_total;
+
+	f = fopen(fpath, "r");
+	if (f == NULL) {
+		error(("file not found: %s", fpath));
+	}
+	assert(2 == fscanf(f, "%d;%d\n", &n_vacant, &n_active));
+	n_total = n_vacant + n_active;
+
+	graph->nodes_vacant = sp_stack_create(sizeof(struct tsp_node), n_total);
+	graph->nodes_active = sp_stack_create(sizeof(struct tsp_node), n_total);
+
+	while (n_vacant-- > 0) {
+		struct tsp_node node;
+		int n;
+
+		/* Parse line */
+		n = fscanf(f, "%d;%d;%d\n", &node.x, &node.y, &node.cost);
+		if (n == EOF)
+			error(("unexpected EOF while importing from %s", fpath));
+		else if (n != 3)
+			error(("failed to parse %s: fscanf returned %d", fpath, n));
+
+		/* Append new node to stack */
+		sp_stack_push(graph->nodes_vacant, &node);
+	}
+
+	while (n_active-- > 0) {
+		struct tsp_node node;
+		int n;
+
+		/* Parse line */
+		n = fscanf(f, "%d;%d;%d\n", &node.x, &node.y, &node.cost);
+		if (n == EOF)
+			error(("unexpected EOF while importing from %s", fpath));
+		else if (n != 3)
+			error(("failed to parse %s: fscanf returned %d", fpath, n));
+
+		/* Append new node to stack */
+		sp_stack_push(graph->nodes_active, &node);
+	}
+
+	info(("successfully parsed %zu lines from %s", n_total, fpath));
+	fclose(f);
+	return graph;
+}
+
 void tsp_graph_copy(struct tsp_graph *dest, const struct tsp_graph *src)
 {
 	sp_stack_copy(dest->nodes_active, src->nodes_active, NULL);
@@ -75,17 +126,25 @@ void tsp_nodes_print(const struct sp_stack *nodes)
 	printf("score: %lu\n", tsp_nodes_evaluate(nodes));
 }
 
-void tsp_graph_to_txt(const struct tsp_graph *graph, const char *fpath)
+void tsp_graph_export(const struct tsp_graph *graph, const char *fpath)
 {
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
 	FILE *const f = fopen(fpath, "w");
 	if (f == NULL) {
 		warn(("tsp_nodes_export: failed to open file %s for writing\n"));
 		return;
 	}
-	/* for (size_t i = 0; i < nodes->size; i++) { */
-	/* 	const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i); */
-	/* 	fprintf(f, "%d;%d;%d\n", node.x, node.y, node.cost); */
-	/* } */
+
+	fprintf(f, "%zu;%zu\n", vacant->size, active->size);
+	for (size_t i = vacant->size; i-- > 0;) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, i);
+		fprintf(f, "%d;%d;%d\n", node.x, node.y, node.cost);
+	}
+	for (size_t i = active->size; i-- > 0;) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(active, i);
+		fprintf(f, "%d;%d;%d\n", node.x, node.y, node.cost);
+	}
 	fclose(f);
 }
 
