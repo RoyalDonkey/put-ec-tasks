@@ -316,10 +316,8 @@ void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 	}
 	for (size_t i = 0; i < n_nodes; i++) {
 		/* Move a random node from vacant to active */
-		struct tsp_node node;
-		int idx;
-		idx = randint(0, vacant->size - 1);
-		node = *(struct tsp_node*)sp_stack_get(vacant, idx);
+		const int idx = randint(0, vacant->size - 1);
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, idx);
 		sp_stack_qremove(vacant, idx, NULL);
 		sp_stack_push(active, &node);
 	}

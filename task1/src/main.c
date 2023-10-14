@@ -17,7 +17,9 @@ static const char *files[] = {
 
 void greedy_random(struct tsp_graph *graph, size_t target_size)
 {
-	tsp_graph_activate_random(graph, target_size - 1);
+	const size_t size = graph->nodes_active->size;
+	if (size < target_size)
+		tsp_graph_activate_random(graph, target_size - size);
 }
 
 void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
@@ -45,7 +47,7 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 		for (int j = 0; j < 200; j++) {
 			tsp_graph_deactivate_all(graph);
 			tsp_graph_activate_node(graph, j);
-			greedy_algo(graph, target_size - 1);
+			greedy_algo(graph, target_size);
 
 			const unsigned long score = tsp_nodes_evaluate(graph->nodes_active);
 			score_min[i] = MIN(score, score_min[i]);
