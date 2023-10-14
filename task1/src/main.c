@@ -29,7 +29,7 @@ void greedy_nn(struct tsp_graph *graph, size_t target_size)
 		tsp_graph_activate_random(graph, 1);
 	prev_node = *(struct tsp_node*)sp_stack_peek(graph->nodes_active);
 	while (graph->nodes_active->size < target_size) {
-		size_t next_idx = tsp_nodes_find_nn(graph->nodes_vacant, &prev_node);
+		const size_t next_idx = tsp_nodes_find_nn(graph->nodes_vacant, &prev_node);
 		prev_node = *(struct tsp_node*)sp_stack_get(graph->nodes_vacant, next_idx);
 		tsp_graph_activate_node(graph, next_idx);
 	}
