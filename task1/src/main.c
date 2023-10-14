@@ -97,6 +97,6 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 int main(void)
 {
 	assert(sp_is_abort());
-	run_greedy_algorithm("greedy", greedy_random);
+	run_greedy_algorithm("random", greedy_random);
 	return 0;
 }
