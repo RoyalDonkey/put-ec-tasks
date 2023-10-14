@@ -43,11 +43,17 @@ struct sp_stack *tsp_nodes_read(const char *fpath)
 
 struct tsp_graph *tsp_graph_create(const struct sp_stack *nodes)
 {
+	struct tsp_graph *const graph = tsp_graph_empty();
+	sp_stack_copy(graph->nodes_vacant, nodes, NULL);
+	return graph;
+}
+
+struct tsp_graph *tsp_graph_empty()
+{
 	struct tsp_graph *graph;
 	graph = malloc_or_die(sizeof(struct tsp_graph));
 	graph->nodes_active = sp_stack_create(sizeof(struct tsp_node), 200);
 	graph->nodes_vacant = sp_stack_create(sizeof(struct tsp_node), 200);
-	sp_stack_copy(graph->nodes_vacant, nodes, NULL);
 	return graph;
 }
 
