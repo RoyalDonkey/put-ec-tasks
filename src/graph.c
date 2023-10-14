@@ -3,6 +3,7 @@
 #include "../libstaple/src/staple.h"
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <float.h>
 
 /* Forward declarations */
@@ -345,4 +346,56 @@ size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_node *no
 		}
 	}
 	return ret;
+}
+
+size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_node *node1, const struct tsp_node *node2)
+{
+	const int x1 = node1->x;
+	const int y1 = node1->y;
+	const int x2 = node2->x;
+	const int y2 = node2->y;
+	size_t ret = 0;
+	double lowest_dist = DBL_MAX;
+	for (size_t i = 0; i < nodes->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
+		const double dist =
+			+ euclidean_dist(x1, y1, node.x, node.y)
+			+ euclidean_dist(x2, y2, node.x, node.y);
+		if (dist < lowest_dist) {
+			ret = i;
+			lowest_dist = dist;
+		}
+	}
+	return ret;
+}
+
+/* Output vacant idx and position where to insert it for minimum cycle length increase. */
+void tsp_graph_find_nc(const struct tsp_graph *graph, size_t *idx, size_t *pos)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(active, 0);
+
+	double lowest_delta = DBL_MAX;
+	for (size_t i = 1; i < active->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(active, i);
+		struct tsp_node nn_node;
+		size_t nn_node_idx;
+
+		/* Find nearest neighbor to the two adjacent nodes in the cycle */
+		nn_node_idx = tsp_nodes_find_2nn(vacant, &prev_node, &node);
+		nn_node = *(struct tsp_node*)sp_stack_get(vacant, nn_node_idx);
+
+		/* Calculate difference in score if the considered vacant node
+		 * was inserted between the 2 closest nodes */
+		const double delta =
+			- euclidean_dist(node.x, node.y, prev_node.x, prev_node.y)
+			+ euclidean_dist(nn_node.x, nn_node.y, node.x, node.y)
+			+ euclidean_dist(nn_node.x, nn_node.y, prev_node.x, prev_node.y);
+		if (delta < lowest_delta) {
+			*idx = nn_node_idx;
+			*pos = i;
+			lowest_delta = delta;
+		}
+	}
 }
