@@ -3,6 +3,7 @@
 #include "../libstaple/src/staple.h"
 #include <stdlib.h>
 #include <unistd.h>
+#include <float.h>
 
 /* Forward declarations */
 int _print_node(const void *ptr);
@@ -321,4 +322,21 @@ void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 		sp_stack_qremove(vacant, idx, NULL);
 		sp_stack_push(active, &node);
 	}
+}
+
+size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_node *node)
+{
+	const int x = node->x;
+	const int y = node->y;
+	size_t ret = 0;
+	double lowest_dist = DBL_MAX;
+	for (size_t i = 0; i < nodes->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
+		const double dist = euclidean_dist(x, y, node.x, node.y);
+		if (dist < lowest_dist) {
+			ret = i;
+			lowest_dist = dist;
+		}
+	}
+	return ret;
 }

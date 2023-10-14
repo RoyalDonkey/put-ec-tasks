@@ -22,6 +22,19 @@ void greedy_random(struct tsp_graph *graph, size_t target_size)
 		tsp_graph_activate_random(graph, target_size - size);
 }
 
+void greedy_nn(struct tsp_graph *graph, size_t target_size)
+{
+	struct tsp_node prev_node;
+	if (graph->nodes_active->size == 0 && target_size != 0)
+		tsp_graph_activate_random(graph, 1);
+	prev_node = *(struct tsp_node*)sp_stack_peek(graph->nodes_active);
+	while (graph->nodes_active->size < target_size) {
+		size_t next_idx = tsp_nodes_find_nn(graph->nodes_vacant, &prev_node);
+		prev_node = *(struct tsp_node*)sp_stack_get(graph->nodes_vacant, next_idx);
+		tsp_graph_activate_node(graph, next_idx);
+	}
+}
+
 void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 {
 	unsigned long score_min[ARRLEN(files)];
@@ -100,5 +113,6 @@ int main(void)
 {
 	assert(sp_is_abort());
 	run_greedy_algorithm("random", greedy_random);
+	run_greedy_algorithm("nearest-neighbor", greedy_nn);
 	return 0;
 }
