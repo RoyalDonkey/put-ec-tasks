@@ -12,6 +12,7 @@ static const char *files[] = {
 	"data/TSPA.csv",
 	"data/TSPB.csv",
 	"data/TSPC.csv",
+	"data/TSPD.csv",
 };
 static struct sp_stack *nodes[ARRLEN(files)];
 

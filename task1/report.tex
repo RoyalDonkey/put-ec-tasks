@@ -162,19 +162,22 @@ optimization methods to allow instances defined only by distance matrices.
 	\textbf{ALG.} & \textbf{FILE} & \textbf{min} & \textbf{avg} & \textbf{max} \\
 	\hline
 	\endhead
-	\multirow{3}*{random} & \verb`TSPA.csv` & 241,510 & 266,062 & 308,034 \\
+	\multirow{4}*{random} & \verb`TSPA.csv` & 241,510 & 266,062 & 308,034 \\
 	& \verb`TSPB.csv` & 241,731 & 266,549 & 293,093 \\
 	& \verb`TSPC.csv` & 189,473 & 215,587 & 239,581 \\
+	& \verb`TSPD.csv` & 195,876 & 218,919 & 250,422 \\
 	\hline
 
-	\multirow{3}*{nn} & \verb`TSPA.csv` & 110,035 & 116,145 & 125,805 \\
+	\multirow{4}*{nn} & \verb`TSPA.csv` & 110,035 & 116,145 & 125,805 \\
 	& \verb`TSPB.csv` & 106,815 & 116,181 & 124,675 \\
 	& \verb`TSPC.csv` & 62,629 & 66,196 & 71,616 \\
+	& \verb`TSPD.csv` & 62,788 & 66,847 & 71,396 \\
 	\hline
 
-	\multirow{3}*{cycle} & \verb`TSPA.csv` & 113,298 & 123,691 & 129,175 \\
+	\multirow{4}*{cycle} & \verb`TSPA.csv` & 113,298 & 123,691 & 129,175 \\
 	& \verb`TSPB.csv` & 111,981 & 120,922 & 131,174 \\
 	& \verb`TSPC.csv` & 67,077 & 72,771	 & 75,763 \\
+	& \verb`TSPD.csv` & 66,193 & 71,606	 & 77,797 \\
 	\hline
 \end{longtable}
 
@@ -247,6 +250,29 @@ optimization methods to allow instances defined only by distance matrices.
 	\end{adjustwidth}
 	\vspace{-15mm}
 	\caption{Best greedy cycle solution to TSPC (67,077)}
+\end{figure}
+
+\subsection{TSPD.csv}
+\begin{figure}[H]
+	\begin{adjustwidth}{-3em}{0}
+		\includegraphics{results/best_random_TSPD.pdf}
+	\end{adjustwidth}
+	\vspace{-15mm}
+	\caption{Best random solution to TSPD (189,473)}
+\end{figure}
+\begin{figure}[H]
+	\begin{adjustwidth}{-3em}{0}
+		\includegraphics{results/best_nearest-neighbor_TSPD.pdf}
+	\end{adjustwidth}
+	\vspace{-15mm}
+	\caption{Best nearest neighbor solution to TSPD (62,629)}
+\end{figure}
+\begin{figure}[H]
+	\begin{adjustwidth}{-3em}{0}
+		\includegraphics{results/best_greedy-cycle_TSPD.pdf}
+	\end{adjustwidth}
+	\vspace{-15mm}
+	\caption{Best greedy cycle solution to TSPD (67,077)}
 \end{figure}
 
 \section{Source code}
