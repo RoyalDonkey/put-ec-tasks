@@ -173,26 +173,26 @@ void tsp_graph_to_pdf(const struct tsp_graph *graph, const char *fpath)
 		"\t\tlabel = \"%d\"\n"
 		"\t\tpos = \"%d,%d!\"\n"
 		"\t\tfixedsize = \"true\"\n"
-		"\t\twidth = \"25\"\n"
+		"\t\twidth = \"%f\"\n"
 		"\t\tshape = \"circle\"\n"
 		"\t\tstyle = \"filled\"\n"
-		"\t\tcolor = \"black\"\n"
-		"\t\tfillcolor = \"black\"\n"
+		"\t\tcolor = \"0.000 0.000 0.000 0.800\"\n"
+		"\t\tfillcolor = \"0.000 0.000 0.000 0.800\"\n"
 		"\t\tfontcolor = \"white\"\n"
-		"\t\tfontsize = \"600\"\n"
+		"\t\tfontsize = \"%f\"\n"
 		"\t];\n";
 	const char graphviz_active_node_fmt[] =
 		"\tnode%d [\n"
 		"\t\tlabel = \"%d\"\n"
 		"\t\tpos = \"%d,%d!\"\n"
 		"\t\tfixedsize = \"true\"\n"
-		"\t\twidth = \"80\"\n"
+		"\t\twidth = \"%f\"\n"
 		"\t\tshape = \"circle\"\n"
 		"\t\tstyle = \"filled\"\n"
 		"\t\tcolor = \"blue\"\n"
-		"\t\tfillcolor = \"blue\"\n"
+		"\t\tfillcolor = \"%3f 1.000 0.800 0.800\"\n"
 		"\t\tfontcolor = \"white\"\n"
-		"\t\tfontsize = \"2000\"\n"
+		"\t\tfontsize = \"%f\"\n"
 		"\t];\n";
 	const char graphviz_edge_fmt[] =
 		"\tnode%d -- node%d [\n"
@@ -208,6 +208,20 @@ void tsp_graph_to_pdf(const struct tsp_graph *graph, const char *fpath)
 	struct sp_stack *const vacant = graph->nodes_vacant;
 	struct sp_stack *const active = graph->nodes_active;
 
+	/* Find minimum and maximum node costs */
+	int cost_min = INT_MAX;
+	int cost_max = INT_MIN;
+	for (size_t i = 0; i < vacant->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, i);
+		cost_min = MIN(cost_min, node.cost);
+		cost_max = MAX(cost_max, node.cost);
+	}
+	for (size_t i = 0; i < active->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(active, i);
+		cost_min = MIN(cost_min, node.cost);
+		cost_max = MAX(cost_max, node.cost);
+	}
+
 	if (fd == -1) {
 		perror("failed to open temporary file");
 		return;
@@ -218,9 +232,12 @@ void tsp_graph_to_pdf(const struct tsp_graph *graph, const char *fpath)
 	/* Draw vacant nodes */
 	for (size_t i = 0; i < vacant->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, i);
+		const double cost_norm = (double)(node.cost - cost_min) / (cost_max - cost_min);
 		const size_t nbytes = sprintf(
 			buf, graphviz_vacant_node_fmt,
-			(int)(i + active->size), node.cost, node.x, node.y
+			(int)(i + active->size), node.cost, node.x, node.y,
+			60.0 + 100.0 * cost_norm,
+			1200.0 + 2000.0 * cost_norm
 		);
 		write(fd, buf, nbytes);
 	}
@@ -228,9 +245,13 @@ void tsp_graph_to_pdf(const struct tsp_graph *graph, const char *fpath)
 	/* Draw active nodes */
 	for (size_t i = 0; i < active->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(active, i);
+		const double cost_norm = (double)(node.cost - cost_min) / (cost_max - cost_min);
 		const size_t nbytes = sprintf(
 			buf, graphviz_active_node_fmt,
-			(int)i, node.cost, node.x, node.y
+			(int)i, node.cost, node.x, node.y,
+			60.0 + 100.0 * cost_norm,
+			0.5 * (1.0 - cost_norm),
+			1200.0 + 2000.0 * cost_norm
 		);
 		write(fd, buf, nbytes);
 	}
