@@ -1,6 +1,6 @@
 #include "graph.h"
 #include "helpers.h"
-#include <staple.h>
+#include "../libstaple/src/staple.h"
 #include <stdlib.h>
 
 /* Forward declarations */

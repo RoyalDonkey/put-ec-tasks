@@ -2,7 +2,7 @@
 #define TSP_GRAPH_H
 
 #include <stdlib.h>
-#include <staple.h>
+#include "../libstaple/src/staple.h"
 
 
 /* Structs */

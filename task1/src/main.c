@@ -1,5 +1,4 @@
 #include "../../src/tsp.h"
-#include <staple.h>
 
 /* Constants */
 #define SEED 0
