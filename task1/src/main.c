@@ -13,6 +13,7 @@ static const char *files[] = {
 	"data/TSPB.csv",
 	"data/TSPC.csv",
 };
+static struct sp_stack *nodes[ARRLEN(files)];
 
 
 void greedy_random(struct tsp_graph *graph, size_t target_size)
@@ -73,10 +74,9 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 	random_seed(0);
 
 	for (size_t i = 0; i < ARRLEN(files); i++) {
-		struct sp_stack *const nodes = tsp_nodes_read(files[i]);
-		struct tsp_graph *const graph = tsp_graph_create(nodes);
-		const size_t target_size = nodes->size / 2;
-		best_solution[i] = tsp_graph_create(nodes);
+		struct tsp_graph *const graph = tsp_graph_create(nodes[i]);
+		const size_t target_size = nodes[i]->size / 2;
+		best_solution[i] = tsp_graph_create(nodes[i]);
 
 		/* 200 solutions starting from each node */
 		for (int j = 0; j < 200; j++) {
@@ -108,7 +108,6 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 		}
 
 		tsp_graph_destroy(graph);
-		sp_stack_destroy(nodes, NULL);
 	}
 
 	printf("solutions found by %s:\n", algo_name);
@@ -134,8 +133,16 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 int main(void)
 {
 	assert(sp_is_abort());
+	for (size_t i = 0; i < ARRLEN(files); i++) {
+		nodes[i] = tsp_nodes_read(files[i]);
+	}
+
 	run_greedy_algorithm("random", greedy_random);
 	run_greedy_algorithm("nearest-neighbor", greedy_nn);
 	run_greedy_algorithm("greedy-cycle", greedy_cycle);
+
+	for (size_t i = 0; i < ARRLEN(files); i++) {
+		sp_stack_destroy(nodes[i], NULL);
+	}
 	return 0;
 }
