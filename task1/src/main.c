@@ -114,14 +114,14 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 	printf("solutions found by %s:\n", algo_name);
 	printf("%-20s\t%8s\t%8s\t%8s\n", "file", "min", "avg", "max");
 	for (size_t i = 0; i < ARRLEN(best_solution); i++) {
-		char instance_fpath[32], out_fname[128];
+		char instance_fpath[128], out_fname[128];
 		printf("%-20s\t%8lu\t%8lu\t%8lu\n",
 			files[i],
 			score_min[i],
 			ROUND_SCORE(score_sum[i] / 400),
 			score_max[i]
 		);
-		strncpy(instance_fpath, files[i], ARRLEN(instance_fpath));
+		strncpy(instance_fpath, files[i], ARRLEN(instance_fpath) - 1);
 		*strrchr(instance_fpath, '.') = '\0';  /* Trim file extension */
 		sprintf(out_fname, "results/best_%s_%s.graph", algo_name, basename(instance_fpath));
 		tsp_graph_export(best_solution[i], out_fname);
