@@ -1,7 +1,7 @@
 CC = cc
 LINKER = cc
 CFLAGS = -std=c99 -Wall -Wextra -pedantic
-LDFLAGS = -L.. -l:libtsp.a
+LDFLAGS = -lm -L.. -l:libtsp.a
 
 # All SRCDIR subdirectories that contain source files
 DIRS = .

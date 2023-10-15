@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <math.h>
 #include <time.h>
 
 void stderr_printf(const char *fmt, ...)
@@ -21,6 +22,13 @@ void *malloc_or_die(size_t n_bytes)
 		exit(EXIT_FAILURE);
 	}
 	return ret;
+}
+
+double euclidean_dist(double x1, double y1, double x2, double y2)
+{
+	const double dx = x1 - x2;
+	const double dy = y1 - y2;
+	return sqrt((dx * dx) + (dy * dy));
 }
 
 /* Sets the seed for the random numbers generator. Use -1 for `time(NULL)`. */

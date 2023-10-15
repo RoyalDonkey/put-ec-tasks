@@ -70,6 +70,7 @@ void tsp_graph_print(const struct tsp_graph *graph)
 	sp_stack_print(graph->nodes_vacant, _print_node);
 	printf("active nodes:\n");
 	sp_stack_print(graph->nodes_active, _print_node);
+	printf("score: %lu\n", tsp_nodes_evaluate(graph->nodes_active));
 }
 
 int _print_node(const void *ptr)
@@ -79,6 +80,22 @@ int _print_node(const void *ptr)
 	return 0;
 }
 
+unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes)
+{
+	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(nodes, 0);
+	unsigned long score = prev_node.cost;
+	for (size_t i = 1; i < nodes->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
+		const double dist = euclidean_dist(prev_node.x, prev_node.y, node.x, node.y);
+		score += node.cost + (unsigned long)(dist + 0.5);
+		prev_node = node;
+	}
+
+	const struct tsp_node first_node = *(struct tsp_node*)sp_stack_get(nodes, 0);
+	const struct tsp_node last_node = *(struct tsp_node*)sp_stack_get(nodes, nodes->size - 1);
+	const double dist = euclidean_dist(last_node.x, last_node.y, first_node.x, first_node.y);
+	return score + (unsigned long)(dist + 0.5);
+}
 
 /* Deactivates all nodes in a graph. */
 void tsp_graph_deactivate_all(struct tsp_graph *graph)

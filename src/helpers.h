@@ -29,6 +29,7 @@
 /* Functions */
 void stderr_printf(const char *fmt, ...);
 void *malloc_or_die(size_t n_bytes);
+double euclidean_dist(double x1, double y1, double x2, double y2);
 void random_seed(int seed);
 int randint(int min, int max);
 

@@ -26,6 +26,7 @@ struct tsp_graph *tsp_graph_create(const struct sp_stack *nodes);
 void tsp_graph_destroy(struct tsp_graph *graph);
 void tsp_node_print(const struct tsp_node *node);
 void tsp_graph_print(const struct tsp_graph *graph);
+unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes);
 
 void tsp_graph_deactivate_all(struct tsp_graph *graph);
 void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx);
