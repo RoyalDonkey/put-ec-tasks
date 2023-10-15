@@ -61,6 +61,27 @@ void tsp_node_print(const struct tsp_node *node)
 	_print_node(node);
 }
 
+void tsp_nodes_print(const struct sp_stack *nodes)
+{
+	printf("%zu nodes:\n", nodes->size);
+	sp_stack_print(nodes, _print_node);
+	printf("score: %lu\n", tsp_nodes_evaluate(nodes));
+}
+
+void tsp_nodes_export(const struct sp_stack *nodes, const char *fpath)
+{
+	FILE *const f = fopen(fpath, "w");
+	if (f == NULL) {
+		warn(("tsp_nodes_export: failed to open file %s for writing\n"));
+		return;
+	}
+	for (size_t i = 0; i < nodes->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
+		fprintf(f, "%d;%d;%d\n", node.x, node.y, node.cost);
+	}
+	fclose(f);
+}
+
 void tsp_graph_print(const struct tsp_graph *graph)
 {
 	printf("tsp_graph: %zu/%zu nodes active\n",
@@ -87,14 +108,14 @@ unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes)
 	for (size_t i = 1; i < nodes->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
 		const double dist = euclidean_dist(prev_node.x, prev_node.y, node.x, node.y);
-		score += node.cost + (unsigned long)(dist + 0.5);
+		score += node.cost + ROUND_SCORE(dist);
 		prev_node = node;
 	}
 
 	const struct tsp_node first_node = *(struct tsp_node*)sp_stack_get(nodes, 0);
 	const struct tsp_node last_node = *(struct tsp_node*)sp_stack_get(nodes, nodes->size - 1);
 	const double dist = euclidean_dist(last_node.x, last_node.y, first_node.x, first_node.y);
-	return score + (unsigned long)(dist + 0.5);
+	return score + ROUND_SCORE(dist);
 }
 
 /* Deactivates all nodes in a graph. */
