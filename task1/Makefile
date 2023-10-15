@@ -1,6 +1,6 @@
 CC = cc
 LINKER = cc
-CFLAGS = -std=c99 -Wall -Wextra -pedantic
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -O2
 LDFLAGS = -lm -L.. -l:libtsp.a
 
 # All SRCDIR subdirectories that contain source files
@@ -14,7 +14,7 @@ SRCS := $(foreach dir, $(SRCDIRS), $(wildcard $(dir)/*.c))
 OBJS := $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SRCS:.c=.o))
 TARGET = task1
 
-.PHONY: directories all main clean debug
+.PHONY: directories all main clean debug profile
 
 all: directories $(TARGET)
 
@@ -32,3 +32,7 @@ clean:
 
 debug: CFLAGS += -g -Og
 debug: clean all
+
+profile: CFLAGS += -pg
+profile: LDFLAGS += -pg
+profile: clean all

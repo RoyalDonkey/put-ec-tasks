@@ -1,5 +1,5 @@
 CC = cc
-CFLAGS = -fPIC -std=c99 -Wall -Wextra -pedantic
+CFLAGS = -fPIC -std=c99 -Wall -Wextra -pedantic -O2
 
 # All SRCDIR subdirectories that contain source files
 DIRS = .
@@ -14,7 +14,7 @@ LIBTSP = libtsp.a
 LIBSTAPLE = libstaple/libstaple.a
 TASKS = task1
 
-.PHONY: directories all clean debug
+.PHONY: directories all clean debug profile
 
 all: directories $(TASKS)
 
@@ -43,6 +43,10 @@ clean:
 
 debug: CFLAGS += -g -Og
 debug: clean all
+
+profile: CFLAGS += -pg
+profile: LDFLAGS += -pg
+profile: clean all
 
 task%: $(LIBTSP)
 	@$(MAKE) -C $@
