@@ -1,5 +1,5 @@
 CC = cc
-CFLAGS = -fPIC -std=c99 -Wall -Wextra -pedantic -O2
+CFLAGS = -fPIC -std=gnu99 -Wall -Wextra -Werror -pedantic -O2
 
 # All SRCDIR subdirectories that contain source files
 DIRS = .
