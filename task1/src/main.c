@@ -29,7 +29,7 @@ void greedy_nn(struct tsp_graph *graph, size_t target_size)
 		tsp_graph_activate_random(graph, 1);
 	prev_node = *(struct tsp_node*)sp_stack_peek(graph->nodes_active);
 	while (graph->nodes_active->size < target_size) {
-		const size_t next_idx = tsp_nodes_find_nn(graph->nodes_vacant, &prev_node);
+		const size_t next_idx = tsp_nodes_find_nn(graph->nodes_vacant, &graph->dist_matrix, &prev_node);
 		prev_node = *(struct tsp_node*)sp_stack_get(graph->nodes_vacant, next_idx);
 		tsp_graph_activate_node(graph, next_idx);
 	}
@@ -44,7 +44,7 @@ void greedy_cycle(struct tsp_graph *graph, size_t target_size)
 		tsp_graph_activate_random(graph, 1);
 	if (active->size == 1 && target_size != 1) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_peek(active);
-		const size_t idx = tsp_nodes_find_nn(vacant, &node);
+		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, &node);
 		tsp_graph_activate_node(graph, idx);
 	}
 	while (active->size < target_size) {
@@ -84,7 +84,7 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 			tsp_graph_activate_node(graph, j);
 			greedy_algo(graph, target_size);
 
-			const unsigned long score = tsp_nodes_evaluate(graph->nodes_active);
+			const unsigned long score = tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix);
 			score_min[i] = MIN(score, score_min[i]);
 			if (score > score_max[i]) {
 				score_max[i] = score;
@@ -98,7 +98,7 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 			tsp_graph_deactivate_all(graph);
 			greedy_algo(graph, target_size);
 
-			const unsigned long score = tsp_nodes_evaluate(graph->nodes_active);
+			const unsigned long score = tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix);
 			score_min[i] = MIN(score, score_min[i]);
 			if (score > score_max[i]) {
 				score_max[i] = score;

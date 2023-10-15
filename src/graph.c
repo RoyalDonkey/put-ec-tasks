@@ -6,6 +6,8 @@
 #include <limits.h>
 #include <float.h>
 #include <stdbool.h>
+#include <string.h>
+
 
 /* Forward declarations */
 int _print_node(const void *ptr);
@@ -15,6 +17,7 @@ struct sp_stack *tsp_nodes_read(const char *fpath)
 {
 	FILE *f;
 	struct sp_stack *nodes;
+	unsigned next_id = 0;
 
 	nodes = sp_stack_create(sizeof(struct tsp_node), 200);
 
@@ -36,6 +39,9 @@ struct sp_stack *tsp_nodes_read(const char *fpath)
 			error(("failed to parse line %zu in %s: fscanf returned %d", lineno, fpath, n));
 		}
 
+		assert(next_id != UINT_MAX);  /* Overflow detection */
+		node.id = next_id++;
+
 		/* Append new node to stack */
 		sp_stack_push(nodes, &node);
 	}
@@ -43,10 +49,26 @@ struct sp_stack *tsp_nodes_read(const char *fpath)
 	return nodes;
 }
 
+void tsp_dist_matrix_init(struct tsp_dist_matrix *matrix, const struct sp_stack *nodes)
+{
+	matrix->dist = malloc_or_die(nodes->size * nodes->size * sizeof(unsigned));
+	for (size_t i = 0; i < nodes->size; i++) {
+		for (size_t j = i + 1; j < nodes->size; j++) {
+			const struct tsp_node node1 = *(struct tsp_node*)sp_stack_get(nodes, i);
+			const struct tsp_node node2 = *(struct tsp_node*)sp_stack_get(nodes, j);
+			const unsigned dist = DIST(node1, node2, NULL);
+			matrix->dist[node1.id * nodes->size + node2.id] = dist;
+			matrix->dist[node2.id * nodes->size + node1.id] = dist;
+		}
+	}
+	matrix->size = nodes->size;
+}
+
 struct tsp_graph *tsp_graph_create(const struct sp_stack *nodes)
 {
 	struct tsp_graph *const graph = tsp_graph_empty();
 	sp_stack_copy(graph->nodes_vacant, nodes, NULL);
+	tsp_dist_matrix_init(&graph->dist_matrix, nodes);
 	return graph;
 }
 
@@ -56,6 +78,8 @@ struct tsp_graph *tsp_graph_empty()
 	graph = malloc_or_die(sizeof(struct tsp_graph));
 	graph->nodes_active = sp_stack_create(sizeof(struct tsp_node), 200);
 	graph->nodes_vacant = sp_stack_create(sizeof(struct tsp_node), 200);
+	graph->dist_matrix.dist = NULL;
+	graph->dist_matrix.size = 0;
 	return graph;
 }
 
@@ -63,7 +87,9 @@ struct tsp_graph *tsp_graph_import(const char *fpath)
 {
 	FILE *f;
 	struct tsp_graph *const graph = malloc_or_die(sizeof(struct tsp_graph));
+	struct sp_stack *all_nodes;
 	int n_vacant, n_active, n_total;
+	unsigned next_id = 0;
 
 	f = fopen(fpath, "r");
 	if (f == NULL) {
@@ -74,6 +100,7 @@ struct tsp_graph *tsp_graph_import(const char *fpath)
 
 	graph->nodes_vacant = sp_stack_create(sizeof(struct tsp_node), n_total);
 	graph->nodes_active = sp_stack_create(sizeof(struct tsp_node), n_total);
+	all_nodes = sp_stack_create(sizeof(struct tsp_node), n_total);
 
 	while (n_vacant-- > 0) {
 		struct tsp_node node;
@@ -86,8 +113,12 @@ struct tsp_graph *tsp_graph_import(const char *fpath)
 		else if (n != 3)
 			error(("failed to parse %s: fscanf returned %d", fpath, n));
 
+		assert(next_id != UINT_MAX);  /* Overflow detection */
+		node.id = next_id++;
+
 		/* Append new node to stack */
 		sp_stack_push(graph->nodes_vacant, &node);
+		sp_stack_push(all_nodes, &node);
 	}
 
 	while (n_active-- > 0) {
@@ -101,12 +132,19 @@ struct tsp_graph *tsp_graph_import(const char *fpath)
 		else if (n != 3)
 			error(("failed to parse %s: fscanf returned %d", fpath, n));
 
+		assert(next_id != UINT_MAX);  /* Overflow detection */
+		node.id = next_id++;
+
 		/* Append new node to stack */
 		sp_stack_push(graph->nodes_active, &node);
+		sp_stack_push(all_nodes, &node);
 	}
+
+	tsp_dist_matrix_init(&graph->dist_matrix, all_nodes);
 
 	info(("successfully parsed %zu lines from %s", n_total, fpath));
 	fclose(f);
+	sp_stack_destroy(all_nodes, NULL);
 	return graph;
 }
 
@@ -114,12 +152,19 @@ void tsp_graph_copy(struct tsp_graph *dest, const struct tsp_graph *src)
 {
 	sp_stack_copy(dest->nodes_active, src->nodes_active, NULL);
 	sp_stack_copy(dest->nodes_vacant, src->nodes_vacant, NULL);
+
+	const size_t dist_matrix_nbytes = src->dist_matrix.size * src->dist_matrix.size * sizeof(unsigned);
+	if (dest->dist_matrix.size != src->dist_matrix.size)
+		dest->dist_matrix.dist = realloc(dest->dist_matrix.dist, dist_matrix_nbytes);
+	memcpy(dest->dist_matrix.dist, src->dist_matrix.dist, dist_matrix_nbytes);
+	dest->dist_matrix.size = src->dist_matrix.size;
 }
 
 void tsp_graph_destroy(struct tsp_graph *graph)
 {
 	sp_stack_destroy(graph->nodes_active, NULL);
 	sp_stack_destroy(graph->nodes_vacant, NULL);
+	free(graph->dist_matrix.dist);
 	free(graph);
 }
 
@@ -137,7 +182,7 @@ void tsp_nodes_print(const struct sp_stack *nodes)
 {
 	printf("%zu nodes:\n", nodes->size);
 	sp_stack_print(nodes, _print_node);
-	printf("score: %lu\n", tsp_nodes_evaluate(nodes));
+	printf("score: %lu\n", tsp_nodes_evaluate(nodes, NULL));
 }
 
 void tsp_graph_export(const struct tsp_graph *graph, const char *fpath)
@@ -287,7 +332,7 @@ void tsp_graph_print(const struct tsp_graph *graph)
 	sp_stack_print(graph->nodes_vacant, _print_node);
 	printf("active nodes:\n");
 	sp_stack_print(graph->nodes_active, _print_node);
-	printf("score: %lu\n", tsp_nodes_evaluate(graph->nodes_active));
+	printf("score: %lu\n", tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix));
 }
 
 int _print_node(const void *ptr)
@@ -297,21 +342,19 @@ int _print_node(const void *ptr)
 	return 0;
 }
 
-unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes)
+unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix)
 {
 	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(nodes, 0);
 	unsigned long score = prev_node.cost;
 	for (size_t i = 1; i < nodes->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
-		const double dist = euclidean_dist(prev_node.x, prev_node.y, node.x, node.y);
-		score += node.cost + ROUND_SCORE(dist);
+		score += node.cost + DIST(node, prev_node, matrix);
 		prev_node = node;
 	}
 
 	const struct tsp_node first_node = *(struct tsp_node*)sp_stack_get(nodes, 0);
 	const struct tsp_node last_node = *(struct tsp_node*)sp_stack_get(nodes, nodes->size - 1);
-	const double dist = euclidean_dist(last_node.x, last_node.y, first_node.x, first_node.y);
-	return score + ROUND_SCORE(dist);
+	return score + DIST(last_node, first_node, matrix);
 }
 
 /* Deactivates all nodes in a graph. */
@@ -358,15 +401,13 @@ void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 	}
 }
 
-size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_node *node)
+size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node)
 {
-	const int x = node->x;
-	const int y = node->y;
 	size_t ret = 0;
 	double lowest_dist = DBL_MAX;
 	for (size_t i = 0; i < nodes->size; i++) {
-		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
-		const double dist = euclidean_dist(x, y, node.x, node.y);
+		const struct tsp_node node2 = *(struct tsp_node*)sp_stack_get(nodes, i);
+		const double dist = DIST(*node, node2, matrix);
 		if (dist < lowest_dist) {
 			ret = i;
 			lowest_dist = dist;
@@ -375,19 +416,15 @@ size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_node *no
 	return ret;
 }
 
-size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_node *node1, const struct tsp_node *node2)
+size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node1, const struct tsp_node *node2)
 {
-	const int x1 = node1->x;
-	const int y1 = node1->y;
-	const int x2 = node2->x;
-	const int y2 = node2->y;
 	size_t ret = 0;
 	double lowest_dist = DBL_MAX;
 	for (size_t i = 0; i < nodes->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
 		const double dist =
-			+ euclidean_dist(x1, y1, node.x, node.y)
-			+ euclidean_dist(x2, y2, node.x, node.y);
+			+ DIST(node, *node1, matrix)
+			+ DIST(node, *node2, matrix);
 		if (dist < lowest_dist) {
 			ret = i;
 			lowest_dist = dist;
@@ -410,7 +447,7 @@ void tsp_graph_find_nc(const struct tsp_graph *graph, size_t *idx, size_t *pos)
 		size_t nn_node_idx;
 
 		/* Find nearest neighbor to the two adjacent nodes in the cycle */
-		nn_node_idx = tsp_nodes_find_2nn(vacant, &prev_node, &node);
+		nn_node_idx = tsp_nodes_find_2nn(vacant, &graph->dist_matrix, &prev_node, &node);
 		nn_node = *(struct tsp_node*)sp_stack_get(vacant, nn_node_idx);
 
 		/* Calculate difference in score if the considered vacant node
