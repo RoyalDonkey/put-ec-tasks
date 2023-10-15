@@ -3,3 +3,5 @@ obj/
 
 *.a
 *.so
+gmon.out
+vgcore.*
