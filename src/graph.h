@@ -2,6 +2,7 @@
 #define TSP_GRAPH_H
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include "../libstaple/src/staple.h"
 
 
@@ -28,6 +29,7 @@ struct tsp_graph *tsp_graph_import(const char *fpath);
 void tsp_graph_copy(struct tsp_graph *dest, const struct tsp_graph *src);
 void tsp_graph_destroy(struct tsp_graph *graph);
 void tsp_node_print(const struct tsp_node *node);
+bool tsp_node_eq(const struct tsp_node *node1, const struct tsp_node *node2);
 void tsp_nodes_print(const struct sp_stack *nodes);
 void tsp_graph_export(const struct tsp_graph *graph, const char *fpath);
 void tsp_graph_to_pdf(const struct tsp_graph *graph, const char *fpath);

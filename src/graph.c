@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <float.h>
+#include <stdbool.h>
 
 /* Forward declarations */
 int _print_node(const void *ptr);
@@ -125,6 +126,11 @@ void tsp_graph_destroy(struct tsp_graph *graph)
 void tsp_node_print(const struct tsp_node *node)
 {
 	_print_node(node);
+}
+
+bool tsp_node_eq(const struct tsp_node *node1, const struct tsp_node *node2)
+{
+	return node1->x == node2->x && node1->y == node2->y;
 }
 
 void tsp_nodes_print(const struct sp_stack *nodes)
