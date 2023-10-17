@@ -1,0 +1,115 @@
+\documentclass[14pt]{article}
+
+% Basic packages
+\usepackage{subfiles}
+\usepackage{extsizes}
+\usepackage[quiet]{fontspec}
+\usepackage{unicode-math}
+\usepackage[margin=2cm]{geometry}
+\usepackage{hyperref}
+\usepackage{fancyhdr, lastpage}
+\usepackage{multirow, multicol}
+\usepackage{longtable}
+\usepackage{siunitx}
+\usepackage{amsmath, amssymb}
+\usepackage{soul}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{pdfpages}
+\usepackage{changepage}
+
+% Font config
+\defaultfontfeatures{Scale=MatchUppercase}
+\setmainfont{Libertinus Serif}
+\setsansfont{Carlito}
+\setmonofont{DejaVu Sans Mono}
+\setmathfont{Libertinus Math}
+\setul{1pt}{.4pt}
+
+% Page layout config
+\let\OLDTITLE\title
+\renewcommand{\title}[1]{\OLDTITLE{#1}\newcommand{\thetitle}{#1}}
+\pagestyle{fancy}
+\lhead{\thetitle}
+\cfoot{Page \thepage\ of \pageref{LastPage}}
+
+% Hyperref config
+\hypersetup{colorlinks=true, urlcolor=blue}
+\urlstyle{same}
+
+% Minted config
+\usepackage[outputdir={\detokenize{OUTDIR}}]{minted}
+\renewcommand{\theFancyVerbLine}{\sffamily
+\textcolor[rgb]{0.4,0.4,0.4}{\small \arabic{FancyVerbLine}}}
+\setminted{linenos,autogobble,obeytabs,frame=single,highlightcolor=yellow}
+\renewcommand{\listingscaption}{Source}
+
+% \usepackage[singlefile, pdf]{graphviz}
+
+\title{Evolutionary Computation Lab II}
+\author{Piotr Kaszubski 148283}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Problem description}
+We are given three columns of integers with a row for each node. The first two
+columns contain \verb`x` and \verb`y` coordinates of the node positions in a
+plane. The third column contains node costs.
+
+\begin{enumerate}
+	\item Select exactly 50\% of the nodes (if the number of nodes is odd we
+		round the number of nodes to be selected up).
+	\item Form a Hamiltonian cycle (closed path) through this set of nodes such
+		that the sum of the total length of the path plus the total cost of the
+		selected nodes is minimized. The distances between nodes are calculated
+		as Euclidean distances rounded mathematically to integer values.
+\end{enumerate}
+
+The distance matrix should be calculated just after reading an instance and
+then only the distance matrix (no nodes coordinates) should be accessed by
+optimization methods to allow instances defined only by distance matrices.
+
+\section{Pseudocode}
+
+\section{Results}
+\begin{longtable}[c]{|cc|rrr|}
+	\hline
+	\textbf{ALG.} & \textbf{FILE} & \textbf{min} & \textbf{avg} & \textbf{max} \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{ALG.} & \textbf{FILE} & \textbf{min} & \textbf{avg} & \textbf{max} \\
+	\hline
+	\endhead
+	\multirow{4}*{random} & \verb`TSPA.csv` & 241,510 & 266,062 & 308,034 \\
+	& \verb`TSPB.csv` & 241,731 & 266,549 & 293,093 \\
+	& \verb`TSPC.csv` & 189,473 & 215,587 & 239,581 \\
+	& \verb`TSPD.csv` & 195,876 & 218,919 & 250,422 \\
+	\hline
+
+	\multirow{4}*{nn} & \verb`TSPA.csv` & 110,035 & 116,145 & 125,805 \\
+	& \verb`TSPB.csv` & 106,815 & 116,181 & 124,675 \\
+	& \verb`TSPC.csv` & 62,629 & 66,196 & 71,616 \\
+	& \verb`TSPD.csv` & 62,788 & 66,847 & 71,396 \\
+	\hline
+
+	\multirow{4}*{cycle} & \verb`TSPA.csv` & 113,298 & 123,691 & 129,175 \\
+	& \verb`TSPB.csv` & 111,981 & 120,922 & 131,174 \\
+	& \verb`TSPC.csv` & 67,077 & 72,771	 & 75,763 \\
+	& \verb`TSPD.csv` & 66,193 & 71,606	 & 77,797 \\
+	\hline
+\end{longtable}
+
+\section{Visualizations}
+
+\section{Source code}
+The source code for all the experiments and this report is hosted on GitHub: \\
+\url{https://github.com/RoyalDonkey/put-ec-tasks}
+
+\section{Conclusions}
+\end{document}
