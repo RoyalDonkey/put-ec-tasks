@@ -9,7 +9,7 @@
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
 #define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 #define ARRLEN(X) (sizeof((X)) / sizeof(*(X)))
-#define ROUND_SCORE(X) ((unsigned long)((X) + 0.5))
+#define ROUND(X) ((unsigned long)((X) + 0.5))
 #define info(x) do { \
 	stderr_printf x; \
 	fputc('\n', stderr); \

@@ -10,7 +10,7 @@
 #define DIST(N1, N2, M) ( \
 	((M) != NULL) ? \
 	(((struct tsp_dist_matrix*)M)->dist[(N1).id * ((struct tsp_dist_matrix*)M)->size + (N2).id]) : \
-	ROUND_SCORE(euclidean_dist((N1).x, (N1).y, (N2).x, (N2).y)))
+	ROUND(euclidean_dist((N1).x, (N1).y, (N2).x, (N2).y)))
 
 
 /* Structs */

@@ -118,7 +118,7 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 		printf("%-20s\t%8lu\t%8lu\t%8lu\n",
 			files[i],
 			score_min[i],
-			ROUND_SCORE(score_sum[i] / 400),
+			ROUND(score_sum[i] / 400),
 			score_max[i]
 		);
 		strncpy(instance_fpath, files[i], ARRLEN(instance_fpath) - 1);
