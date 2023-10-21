@@ -404,13 +404,13 @@ void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node)
 {
 	size_t ret = 0;
-	double lowest_dist = DBL_MAX;
+	double lowest_delta = DBL_MAX;
 	for (size_t i = 0; i < nodes->size; i++) {
 		const struct tsp_node node2 = *(struct tsp_node*)sp_stack_get(nodes, i);
-		const double dist = DIST(*node, node2, matrix);
-		if (dist < lowest_dist) {
+		const double delta = DIST(*node, node2, matrix) + node2.cost;
+		if (delta < lowest_delta) {
 			ret = i;
-			lowest_dist = dist;
+			lowest_delta = delta;
 		}
 	}
 	return ret;
@@ -419,15 +419,16 @@ size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_mat
 size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node1, const struct tsp_node *node2)
 {
 	size_t ret = 0;
-	double lowest_dist = DBL_MAX;
+	double lowest_delta = DBL_MAX;
 	for (size_t i = 0; i < nodes->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
-		const double dist =
+		const double delta =
 			+ DIST(node, *node1, matrix)
-			+ DIST(node, *node2, matrix);
-		if (dist < lowest_dist) {
+			+ DIST(node, *node2, matrix)
+			+ node.cost;
+		if (delta < lowest_delta) {
 			ret = i;
-			lowest_dist = dist;
+			lowest_delta = delta;
 		}
 	}
 	return ret;
@@ -455,7 +456,8 @@ void tsp_graph_find_nc(const struct tsp_graph *graph, size_t *idx, size_t *pos)
 		const double delta =
 			- euclidean_dist(node.x, node.y, prev_node.x, prev_node.y)
 			+ euclidean_dist(nn_node.x, nn_node.y, node.x, node.y)
-			+ euclidean_dist(nn_node.x, nn_node.y, prev_node.x, prev_node.y);
+			+ euclidean_dist(nn_node.x, nn_node.y, prev_node.x, prev_node.y)
+			+ nn_node.cost;
 		if (delta < lowest_delta) {
 			*idx = nn_node_idx;
 			*pos = i;
