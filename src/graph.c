@@ -437,8 +437,9 @@ size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_ma
 }
 
 /* Output vacant idx and position where to insert it for minimum cycle length increase. */
-void tsp_graph_find_nc(const struct tsp_graph *graph, size_t *idx, size_t *pos)
+struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph)
 {
+	struct tsp_move ret = { SIZE_MAX, SIZE_MAX };
 	struct sp_stack *const vacant = graph->nodes_vacant;
 	struct sp_stack *const active = graph->nodes_active;
 	assert(active->size >= 2);
@@ -462,9 +463,10 @@ void tsp_graph_find_nc(const struct tsp_graph *graph, size_t *idx, size_t *pos)
 			+ euclidean_dist(nn_node.x, nn_node.y, prev_node.x, prev_node.y)
 			+ nn_node.cost;
 		if (delta < lowest_delta) {
-			*idx = nn_node_idx;
-			*pos = i;
+			ret.src = nn_node_idx;
+			ret.dest = i;
 			lowest_delta = delta;
 		}
 	}
+	return ret;
 }

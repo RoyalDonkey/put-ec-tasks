@@ -34,6 +34,12 @@ struct tsp_graph {
 	struct tsp_dist_matrix dist_matrix;  /* Distance cache */
 };
 
+/* Represents a move operation from src index to dest index */
+struct tsp_move {
+	size_t src;
+	size_t dest;
+};
+
 
 /* Functions */
 struct sp_stack *tsp_nodes_read(const char *fpath);
@@ -56,7 +62,7 @@ void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx);
 void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes);
 size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node);
 size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node1, const struct tsp_node *node2);
-void tsp_graph_find_nc(const struct tsp_graph *graph, size_t *idx, size_t *pos);
+struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph);
 
 
 #endif /* TSP_GRAPH_H */

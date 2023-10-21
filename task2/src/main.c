@@ -29,14 +29,8 @@ void greedy_cycle_2regret(struct tsp_graph *graph, size_t target_size)
 		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, &node);
 		tsp_graph_activate_node(graph, idx);
 	}
-	while (active->size < target_size) {
-		size_t idx, pos;
-		struct tsp_node node;
-		tsp_graph_find_nc(graph, &idx, &pos);
-		node = *(struct tsp_node*)sp_stack_get(vacant, idx);
-		sp_stack_remove(vacant, idx, NULL);
-		sp_stack_insert(active, pos, &node);
-	}
+	/* while (active->size < target_size) { */
+	/* } */
 }
 
 void greedy_cycle_wsc(struct tsp_graph *graph, size_t target_size)
@@ -51,14 +45,8 @@ void greedy_cycle_wsc(struct tsp_graph *graph, size_t target_size)
 		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, &node);
 		tsp_graph_activate_node(graph, idx);
 	}
-	while (active->size < target_size) {
-		size_t idx, pos;
-		struct tsp_node node;
-		tsp_graph_find_nc(graph, &idx, &pos);
-		node = *(struct tsp_node*)sp_stack_get(vacant, idx);
-		sp_stack_remove(vacant, idx, NULL);
-		sp_stack_insert(active, pos, &node);
-	}
+	/* while (active->size < target_size) { */
+	/* } */
 }
 
 void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)

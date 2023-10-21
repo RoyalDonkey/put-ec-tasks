@@ -50,12 +50,11 @@ void greedy_cycle(struct tsp_graph *graph, size_t target_size)
 		tsp_graph_activate_node(graph, idx);
 	}
 	while (active->size < target_size) {
-		size_t idx, pos;
 		struct tsp_node node;
-		tsp_graph_find_nc(graph, &idx, &pos);
-		node = *(struct tsp_node*)sp_stack_get(vacant, idx);
-		sp_stack_remove(vacant, idx, NULL);
-		sp_stack_insert(active, pos, &node);
+		const struct tsp_move move = tsp_graph_find_nc(graph);
+		node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
+		sp_stack_remove(vacant, move.src, NULL);
+		sp_stack_insert(active, move.dest, &node);
 	}
 }
 
