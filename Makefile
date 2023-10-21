@@ -29,7 +29,6 @@ $(LIBTSP): $(LIBSTAPLE) $(OBJS)
 	@echo 'END' >>script.ar
 	$(AR) -M <script.ar
 	@$(RM) script.ar
-	@for t in $(TASKS); do $(MAKE) -C "$$t" clean; done
 
 $(LIBSTAPLE):
 	@$(MAKE) -C libstaple ABORT=1
