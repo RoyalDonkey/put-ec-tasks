@@ -346,7 +346,7 @@ int _print_node(const void *ptr)
 unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix)
 {
 	assert(nodes->size != 0);
-	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(nodes, 0);
+	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_peek(nodes);
 	unsigned long score = prev_node.cost;
 	for (size_t i = 1; i < nodes->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
@@ -354,7 +354,7 @@ unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes, const struct tsp_
 		prev_node = node;
 	}
 
-	const struct tsp_node first_node = *(struct tsp_node*)sp_stack_get(nodes, 0);
+	const struct tsp_node first_node = *(struct tsp_node*)sp_stack_peek(nodes);
 	const struct tsp_node last_node = *(struct tsp_node*)sp_stack_get(nodes, nodes->size - 1);
 	return score + DIST(last_node, first_node, matrix);
 }
