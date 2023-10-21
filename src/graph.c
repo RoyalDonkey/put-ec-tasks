@@ -470,3 +470,52 @@ struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph)
 	}
 	return ret;
 }
+
+/* Given a graph, constructs an RCL based on the greedy cycle heuristic.
+ * size - no. nodes from graph's vacant list that should be put in the RCL,
+ * p    - proportional sample size (0.0 == random, 1.0 == greedy) */
+struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, double p)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+	assert(size <= vacant->size);
+	assert(p >= 0.0 && p <= 1.0);
+
+	struct sp_stack *const rcl = sp_stack_create(sizeof(struct tsp_move), size);
+	const size_t pool_size = MAX(1, ROUND(p * vacant->size));
+	struct tsp_graph graph_copy;
+	graph_copy.nodes_active = graph->nodes_active;
+	graph_copy.nodes_vacant = sp_stack_create(vacant->elem_size, vacant->size);
+	graph_copy.dist_matrix = graph->dist_matrix;
+	struct sp_stack *const vacant_copy = graph_copy.nodes_vacant;
+	sp_stack_copy(vacant_copy, vacant, NULL);
+
+	while (rcl->size < size) {
+		struct tsp_move best_move;
+		const size_t vacant_copy_true_size = vacant_copy->size;
+
+                /* Find the best node to add to graph from a pool_size random sample */
+                shuffle(vacant_copy->data, vacant_copy->elem_size, vacant_copy->size, pool_size);
+		vacant_copy->size = pool_size;  /* Only choose from the pool segment */
+		if (active->size == 0) {
+			best_move.src = randint(0, vacant_copy->size - 1);
+			best_move.dest = 0;
+		} else if (active->size == 1) {
+			const struct tsp_node node = *(struct tsp_node*)sp_stack_peek(active);
+			best_move.src = tsp_nodes_find_nn(vacant_copy, &graph_copy.dist_matrix, &node);
+			best_move.dest = 1;
+		} else {
+			best_move = tsp_graph_find_nc(&graph_copy);
+		}
+		vacant_copy->size = vacant_copy_true_size;
+
+		/* Remove the best node from future candidates */
+		sp_stack_qremove(vacant_copy, best_move.src, NULL);
+
+		/* Add the move that activates the best node to the RCL */
+		sp_stack_push(rcl, &best_move);
+	}
+
+	sp_stack_destroy(vacant_copy, NULL);
+	return rcl;
+}

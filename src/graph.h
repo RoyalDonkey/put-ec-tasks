@@ -63,6 +63,7 @@ void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes);
 size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node);
 size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node1, const struct tsp_node *node2);
 struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph);
+struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, double p);
 
 
 #endif /* TSP_GRAPH_H */

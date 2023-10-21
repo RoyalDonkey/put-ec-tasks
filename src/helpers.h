@@ -33,6 +33,7 @@ void *malloc_or_die(size_t n_bytes);
 double euclidean_dist(double x1, double y1, double x2, double y2);
 void random_seed(int seed);
 int randint(int min, int max);
+void shuffle(void *buf, size_t elem_size, size_t buf_size, size_t n);
 
 
 #endif /* TSP_HELPERS_H */
