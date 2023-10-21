@@ -467,7 +467,32 @@ struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph)
 			ret.dest = i;
 			lowest_delta = delta;
 		}
+		prev_node = node;
 	}
+
+	/* Consider the last edge from first to last node */
+	const struct tsp_node first_node = *(struct tsp_node*)sp_stack_peek(active);
+	const struct tsp_node last_node = *(struct tsp_node*)sp_stack_get(active, active->size - 1);
+	struct tsp_node nn_node;
+	size_t nn_node_idx;
+
+	/* Find nearest neighbor to the two adjacent nodes in the cycle */
+	nn_node_idx = tsp_nodes_find_2nn(vacant, &graph->dist_matrix, first_node, last_node);
+	nn_node = *(struct tsp_node*)sp_stack_get(vacant, nn_node_idx);
+
+	/* Calculate difference in score if the considered vacant node
+	 * was inserted between the 2 closest nodes */
+	const double delta =
+		- DIST(first_node, last_node, &graph->dist_matrix)
+		+ DIST(nn_node, first_node, &graph->dist_matrix)
+		+ DIST(nn_node, last_node, &graph->dist_matrix)
+		+ nn_node.cost;
+	if (delta < lowest_delta) {
+		ret.src = nn_node_idx;
+		ret.dest = active->size;
+		lowest_delta = delta;
+	}
+
 	return ret;
 }
 
