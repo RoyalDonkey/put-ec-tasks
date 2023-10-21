@@ -168,14 +168,14 @@ void tsp_graph_destroy(struct tsp_graph *graph)
 	free(graph);
 }
 
-void tsp_node_print(const struct tsp_node *node)
+void tsp_node_print(struct tsp_node node)
 {
-	_print_node(node);
+	_print_node(&node);
 }
 
-bool tsp_node_eq(const struct tsp_node *node1, const struct tsp_node *node2)
+bool tsp_node_eq(struct tsp_node node1, struct tsp_node node2)
 {
-	return node1->x == node2->x && node1->y == node2->y;
+	return node1.x == node2.x && node1.y == node2.y;
 }
 
 void tsp_nodes_print(const struct sp_stack *nodes)
@@ -403,13 +403,13 @@ void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 	}
 }
 
-size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node)
+size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, struct tsp_node node)
 {
 	size_t ret = 0;
 	double lowest_delta = DBL_MAX;
 	for (size_t i = 0; i < nodes->size; i++) {
 		const struct tsp_node node2 = *(struct tsp_node*)sp_stack_get(nodes, i);
-		const double delta = DIST(*node, node2, matrix) + node2.cost;
+		const double delta = DIST(node, node2, matrix) + node2.cost;
 		if (delta < lowest_delta) {
 			ret = i;
 			lowest_delta = delta;
@@ -418,15 +418,15 @@ size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_mat
 	return ret;
 }
 
-size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, const struct tsp_node *node1, const struct tsp_node *node2)
+size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, struct tsp_node node1, struct tsp_node node2)
 {
 	size_t ret = 0;
 	double lowest_delta = DBL_MAX;
 	for (size_t i = 0; i < nodes->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
 		const double delta =
-			+ DIST(node, *node1, matrix)
-			+ DIST(node, *node2, matrix)
+			+ DIST(node, node1, matrix)
+			+ DIST(node, node2, matrix)
 			+ node.cost;
 		if (delta < lowest_delta) {
 			ret = i;
@@ -452,7 +452,7 @@ struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph)
 		size_t nn_node_idx;
 
 		/* Find nearest neighbor to the two adjacent nodes in the cycle */
-		nn_node_idx = tsp_nodes_find_2nn(vacant, &graph->dist_matrix, &prev_node, &node);
+		nn_node_idx = tsp_nodes_find_2nn(vacant, &graph->dist_matrix, prev_node, node);
 		nn_node = *(struct tsp_node*)sp_stack_get(vacant, nn_node_idx);
 
 		/* Calculate difference in score if the considered vacant node
@@ -502,7 +502,7 @@ struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, 
 			best_move.dest = 0;
 		} else if (active->size == 1) {
 			const struct tsp_node node = *(struct tsp_node*)sp_stack_peek(active);
-			best_move.src = tsp_nodes_find_nn(vacant_copy, &graph_copy.dist_matrix, &node);
+			best_move.src = tsp_nodes_find_nn(vacant_copy, &graph_copy.dist_matrix, node);
 			best_move.dest = 1;
 		} else {
 			best_move = tsp_graph_find_nc(&graph_copy);

@@ -26,7 +26,7 @@ void greedy_cycle_2regret(struct tsp_graph *graph, size_t target_size)
 		tsp_graph_activate_random(graph, 1);
 	if (active->size == 1 && target_size != 1) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_peek(active);
-		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, &node);
+		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, node);
 		tsp_graph_activate_node(graph, idx);
 	}
 	/* while (active->size < target_size) { */
@@ -42,7 +42,7 @@ void greedy_cycle_wsc(struct tsp_graph *graph, size_t target_size)
 		tsp_graph_activate_random(graph, 1);
 	if (active->size == 1 && target_size != 1) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_peek(active);
-		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, &node);
+		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, node);
 		tsp_graph_activate_node(graph, idx);
 	}
 	/* while (active->size < target_size) { */
