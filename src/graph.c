@@ -458,9 +458,9 @@ struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph)
 		/* Calculate difference in score if the considered vacant node
 		 * was inserted between the 2 closest nodes */
 		const double delta =
-			- euclidean_dist(node.x, node.y, prev_node.x, prev_node.y)
-			+ euclidean_dist(nn_node.x, nn_node.y, node.x, node.y)
-			+ euclidean_dist(nn_node.x, nn_node.y, prev_node.x, prev_node.y)
+			- DIST(node, prev_node, &graph->dist_matrix)
+			+ DIST(nn_node, node, &graph->dist_matrix)
+			+ DIST(nn_node, prev_node, &graph->dist_matrix)
 			+ nn_node.cost;
 		if (delta < lowest_delta) {
 			ret.src = nn_node_idx;
