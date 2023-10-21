@@ -332,7 +332,8 @@ void tsp_graph_print(const struct tsp_graph *graph)
 	sp_stack_print(graph->nodes_vacant, _print_node);
 	printf("active nodes:\n");
 	sp_stack_print(graph->nodes_active, _print_node);
-	printf("score: %lu\n", tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix));
+	if (graph->nodes_active->size != 0)
+		printf("score: %lu\n", tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix));
 }
 
 int _print_node(const void *ptr)
@@ -344,6 +345,7 @@ int _print_node(const void *ptr)
 
 unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix)
 {
+	assert(nodes->size != 0);
 	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(nodes, 0);
 	unsigned long score = prev_node.cost;
 	for (size_t i = 1; i < nodes->size; i++) {
@@ -439,7 +441,8 @@ void tsp_graph_find_nc(const struct tsp_graph *graph, size_t *idx, size_t *pos)
 {
 	struct sp_stack *const vacant = graph->nodes_vacant;
 	struct sp_stack *const active = graph->nodes_active;
-	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(active, 0);
+	assert(active->size >= 2);
+	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_peek(active);
 
 	double lowest_delta = DBL_MAX;
 	for (size_t i = 1; i < active->size; i++) {
