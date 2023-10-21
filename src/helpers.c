@@ -40,5 +40,5 @@ void random_seed(int seed)
 /* Returns a random integer between <min; max> (both-inclusive). */
 int randint(int min, int max)
 {
-	return min == max ? min : min + (rand() % (max - min));
+	return min == max ? min : min + (rand() % (max - min + 1));
 }
