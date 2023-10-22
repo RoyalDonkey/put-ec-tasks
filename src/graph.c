@@ -364,7 +364,7 @@ long tsp_graph_evaluate_move(const struct tsp_graph *graph, struct tsp_move move
 {
 	struct sp_stack *const vacant = graph->nodes_vacant;
 	struct sp_stack *const active = graph->nodes_active;
-	assert(move.dest <= active->size);
+	assert(move.dest < active->size);
 	const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
 	const struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(active, move.dest % active->size);
 	const struct tsp_node next_node = *(struct tsp_node*)sp_stack_get(active, (move.dest + active->size - 1) % active->size);
@@ -522,7 +522,17 @@ struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, 
 	assert(size <= vacant->size);
 	assert(p >= 0.0 && p <= 1.0);
 
-	struct sp_stack *const rcl = sp_stack_create(sizeof(struct tsp_move), size);
+        /* This function is a performance mess. It uses a copy of vacant nodes
+         * for in-place shuffling, relies on node indices, but at the end the
+         * indices are out-of-sync with the original vacant nodes, so we also
+         * need to store copies of node IDs and find their "real" vacant indices
+         * afterwards. Yikes. */
+        struct node_move {
+		unsigned node_id;      /* ID of the node, for finding the "real" vacant indices after */
+		struct tsp_move move;  /* Move from vacant_copy to graph */
+	};
+
+	struct sp_stack *const rcl = sp_stack_create(sizeof(struct node_move), size);
 	struct tsp_graph graph_copy;
 	graph_copy.nodes_active = graph->nodes_active;
 	graph_copy.nodes_vacant = sp_stack_create(vacant->elem_size, vacant->size);
@@ -531,34 +541,58 @@ struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, 
 	sp_stack_copy(vacant_copy, vacant, NULL);
 
 	while (rcl->size < size) {
-		struct tsp_move best_move;
+		struct node_move nm;
 		const size_t pool_size = MAX(1, ROUND(p * vacant_copy->size));
 		const size_t vacant_copy_true_size = vacant_copy->size;
 
-                /* Find the best node to add to graph from a pool_size random sample */
-                shuffle(vacant_copy->data, vacant_copy->elem_size, vacant_copy->size, pool_size);
-		vacant_copy->size = pool_size;  /* Only choose from the pool segment */
+		/* Find the best node to add to graph from a pool_size random sample */
+		tail_shuffle(vacant_copy->data, vacant_copy->elem_size, vacant_copy->size, pool_size);
+
+		/* Dirty hack - pretend the stack is smaller to only choose from the pool segment */
+		vacant_copy->data = ((char*)vacant_copy->data) + (vacant_copy->size - pool_size) * vacant_copy->elem_size;
+		vacant_copy->size = pool_size;
+
 		if (active->size == 0) {
-			best_move.src = randint(0, vacant_copy->size - 1);
-			best_move.dest = 0;
+			nm.move.src = randint(0, vacant_copy->size - 1);
+			nm.move.dest = 0;
 		} else if (active->size == 1) {
 			const struct tsp_node node = *(struct tsp_node*)sp_stack_peek(active);
-			best_move.src = tsp_nodes_find_nn(vacant_copy, &graph_copy.dist_matrix, node);
-			best_move.dest = 1;
+			nm.move.src = tsp_nodes_find_nn(vacant_copy, &graph_copy.dist_matrix, node);
+			nm.move.dest = 1;
 		} else {
-			best_move = tsp_graph_find_nc(&graph_copy);
+			const struct tsp_move best_move = tsp_graph_find_nc(&graph_copy);
+			nm.move = best_move;
 		}
+		nm.node_id = ((struct tsp_node*)sp_stack_get(vacant_copy, nm.move.src))->id;
+
+		/* Revert the dirty hack */
 		vacant_copy->size = vacant_copy_true_size;
+		vacant_copy->data = ((char*)vacant_copy->data) - (vacant_copy->size - pool_size) * vacant_copy->elem_size;
 
 		/* Remove the best node from future candidates */
-		sp_stack_qremove(vacant_copy, best_move.src, NULL);
+		sp_stack_qremove(vacant_copy, nm.move.src, NULL);
 
 		/* Add the move that activates the best node to the RCL */
-		sp_stack_push(rcl, &best_move);
+		sp_stack_push(rcl, &nm);
 	}
-
 	sp_stack_destroy(vacant_copy, NULL);
-	return rcl;
+
+	/* Map rcl elements back to original graph's vacant indices */
+	struct sp_stack *const moves = sp_stack_create(sizeof(struct tsp_move), rcl->size);
+	size_t *const map = malloc_or_die((TSP_MAX_NODE_ID + 1) * sizeof(size_t));
+	for (size_t i = 0; i < vacant->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, i);
+		map[node.id] = i;
+	}
+	for (size_t i = 0; i < rcl->size; i++) {
+		const struct node_move nm = *(struct node_move*)sp_stack_get(rcl, i);
+		const struct tsp_move move = { map[nm.node_id], nm.move.dest };
+		sp_stack_push(moves, &move);
+	}
+	free(map);
+
+	sp_stack_destroy(rcl, NULL);
+	return moves;
 }
 
 /* "deltas" is an auxiliary array that's shared between runs of this function to
@@ -569,7 +603,7 @@ unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, size_t va
 	assert(active->size >= 2);
 
 	/* Populate an array of hypothetical cost changes (deltas) */
-	for (size_t dest = 0; dest <= active->size; dest++) {
+	for (size_t dest = 0; dest < active->size; dest++) {
 		const struct tsp_move move = { vacant_idx, dest };
 		deltas[dest] = tsp_graph_evaluate_move(graph, move);
 	}
@@ -578,7 +612,7 @@ unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, size_t va
 	long max_deltas[2];
 	max_deltas[0] = MIN(deltas[0], deltas[1]);
 	max_deltas[1] = MAX(deltas[0], deltas[1]);
-	for (size_t i = 2; i <= active->size; i++) {
+	for (size_t i = 2; i < active->size; i++) {
 		if (deltas[i] >= max_deltas[1]) {
 			max_deltas[0] = max_deltas[1];
 			max_deltas[1] = deltas[i];

@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include "../libstaple/src/staple.h"
 
+#define TSP_MAX_NODE_ID 200
+
 /* Distance between nodes N1 and N2, with optional pointer to distance matrix M
  * (if M == NULL, euclidean_distance is invoked). */
 #define DIST(N1, N2, M) ( \
