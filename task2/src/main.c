@@ -29,8 +29,15 @@ void greedy_cycle_2regret(struct tsp_graph *graph, size_t target_size)
 		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, node);
 		tsp_graph_activate_node(graph, idx);
 	}
-	/* while (active->size < target_size) { */
-	/* } */
+	while (active->size < target_size) {
+		struct tsp_node node;
+		struct sp_stack *const rcl = tsp_graph_find_rcl(graph, 10, 0.04);
+		const struct tsp_move move = tsp_graph_find_2regret(graph, rcl);
+		sp_stack_destroy(rcl, NULL);
+		node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
+		sp_stack_remove(vacant, move.src, NULL);
+		sp_stack_insert(active, move.dest, &node);
+	}
 }
 
 void greedy_cycle_wsc(struct tsp_graph *graph, size_t target_size)
@@ -129,7 +136,7 @@ int main(void)
 	}
 
 	run_greedy_algorithm("2-regret", greedy_cycle_2regret);
-	run_greedy_algorithm("weighted-sum-criterion", greedy_cycle_wsc);
+	/* run_greedy_algorithm("weighted-sum-criterion", greedy_cycle_wsc); */
 
 	for (size_t i = 0; i < ARRLEN(files); i++) {
 		sp_stack_destroy(nodes[i], NULL);

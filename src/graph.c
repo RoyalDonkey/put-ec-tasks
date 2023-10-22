@@ -544,3 +544,66 @@ struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, 
 	sp_stack_destroy(vacant_copy, NULL);
 	return rcl;
 }
+
+/* "deltas" is an auxiliary array that's shared between runs of this function to
+ * avoid repeatedly allocating and deallocating memory */
+unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, struct tsp_move move, long *deltas)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+	const struct tsp_node candidate_node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
+	assert(active->size >= 2);
+
+	/* Populate an array of hypothetical cost changes (deltas) */
+	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_peek(active);
+	for (size_t i = 1; i < active->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(active, i);
+		deltas[i] =
+			- DIST(node, prev_node, &graph->dist_matrix)
+			+ DIST(candidate_node, node, &graph->dist_matrix)
+			+ DIST(candidate_node, prev_node, &graph->dist_matrix);
+	}
+	{
+		const struct tsp_node first_node = *(struct tsp_node*)sp_stack_peek(active);
+		const struct tsp_node last_node = *(struct tsp_node*)sp_stack_get(active, active->size - 1);
+		deltas[0] =
+			- DIST(first_node, last_node, &graph->dist_matrix)
+			+ DIST(candidate_node, first_node, &graph->dist_matrix)
+			+ DIST(candidate_node, last_node, &graph->dist_matrix);
+	}
+
+	/* Find the 2 largest regrets */
+	long regret[2];
+	regret[0] = MIN(deltas[0], deltas[1]);
+	regret[1] = MAX(deltas[0], deltas[1]);
+	for (size_t i = 2; i < active->size; i++) {
+		if (deltas[i] >= regret[1]) {
+			regret[0] = regret[1];
+			regret[1] = deltas[i];
+		} else if (deltas[i] > regret[0]) {
+			regret[0] = deltas[i];
+		}
+	}
+
+	return regret[1] - regret[0];
+}
+
+struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const struct sp_stack *rcl)
+{
+	struct sp_stack *const active = graph->nodes_active;
+	long *const deltas = malloc_or_die(active->size * sizeof(long));
+	struct tsp_move best_move = { SIZE_MAX, SIZE_MAX };
+	long best_regret = LONG_MIN;
+
+	for (size_t i = 0; i < rcl->size; i++) {
+		struct tsp_move move = *(struct tsp_move*)sp_stack_get(rcl, i);
+		const long regret = tsp_graph_compute_2regret(graph, move, deltas);
+		if (regret > best_regret) {
+			best_move = move;
+			best_regret = regret;
+		}
+	}
+
+	free(deltas);
+	return best_move;
+}
