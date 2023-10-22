@@ -507,7 +507,6 @@ struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, 
 	assert(p >= 0.0 && p <= 1.0);
 
 	struct sp_stack *const rcl = sp_stack_create(sizeof(struct tsp_move), size);
-	const size_t pool_size = MAX(1, ROUND(p * vacant->size));
 	struct tsp_graph graph_copy;
 	graph_copy.nodes_active = graph->nodes_active;
 	graph_copy.nodes_vacant = sp_stack_create(vacant->elem_size, vacant->size);
@@ -517,6 +516,7 @@ struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, 
 
 	while (rcl->size < size) {
 		struct tsp_move best_move;
+		const size_t pool_size = MAX(1, ROUND(p * vacant_copy->size));
 		const size_t vacant_copy_true_size = vacant_copy->size;
 
                 /* Find the best node to add to graph from a pool_size random sample */
