@@ -505,7 +505,7 @@ struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph)
 		+ nn_node.cost;
 	if (delta < lowest_delta) {
 		ret.src = nn_node_idx;
-		ret.dest = active->size;
+		ret.dest = 0;
 		lowest_delta = delta;
 	}
 
