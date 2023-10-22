@@ -56,6 +56,7 @@ void tsp_graph_export(const struct tsp_graph *graph, const char *fpath);
 void tsp_graph_to_pdf(const struct tsp_graph *graph, const char *fpath);
 void tsp_graph_print(const struct tsp_graph *graph);
 unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix);
+long tsp_graph_evaluate_move(const struct tsp_graph *graph, struct tsp_move move);
 
 void tsp_graph_deactivate_all(struct tsp_graph *graph);
 void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx);
@@ -64,7 +65,7 @@ size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_mat
 size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, struct tsp_node node1, struct tsp_node node2);
 struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph);
 struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, double p);
-unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, struct tsp_move move, long *deltas);
+unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, size_t vacant_idx, long *deltas);
 struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const struct sp_stack *rcl, long *deltas);
 
 

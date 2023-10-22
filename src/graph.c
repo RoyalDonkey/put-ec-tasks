@@ -359,6 +359,22 @@ unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes, const struct tsp_
 	return score + DIST(last_node, first_node, matrix);
 }
 
+/* Returns the difference in graph score, if a given move was made  */
+long tsp_graph_evaluate_move(const struct tsp_graph *graph, struct tsp_move move)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+	assert(move.dest <= active->size);
+	const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
+	const struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(active, move.dest % active->size);
+	const struct tsp_node next_node = *(struct tsp_node*)sp_stack_get(active, (move.dest + active->size - 1) % active->size);
+	return
+		- DIST(prev_node, next_node, &graph->dist_matrix)
+		+ DIST(node, prev_node, &graph->dist_matrix)
+		+ DIST(node, next_node, &graph->dist_matrix)
+		+ node.cost;
+}
+
 /* Deactivates all nodes in a graph. */
 void tsp_graph_deactivate_all(struct tsp_graph *graph)
 {
@@ -547,45 +563,31 @@ struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, 
 
 /* "deltas" is an auxiliary array that's shared between runs of this function to
  * avoid repeatedly allocating and deallocating memory */
-unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, struct tsp_move move, long *deltas)
+unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, size_t vacant_idx, long *deltas)
 {
-	struct sp_stack *const vacant = graph->nodes_vacant;
 	struct sp_stack *const active = graph->nodes_active;
-	const struct tsp_node candidate_node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
 	assert(active->size >= 2);
 
 	/* Populate an array of hypothetical cost changes (deltas) */
-	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_peek(active);
-	for (size_t i = 1; i < active->size; i++) {
-		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(active, i);
-		deltas[i] =
-			- DIST(node, prev_node, &graph->dist_matrix)
-			+ DIST(candidate_node, node, &graph->dist_matrix)
-			+ DIST(candidate_node, prev_node, &graph->dist_matrix);
-	}
-	{
-		const struct tsp_node first_node = *(struct tsp_node*)sp_stack_peek(active);
-		const struct tsp_node last_node = *(struct tsp_node*)sp_stack_get(active, active->size - 1);
-		deltas[0] =
-			- DIST(first_node, last_node, &graph->dist_matrix)
-			+ DIST(candidate_node, first_node, &graph->dist_matrix)
-			+ DIST(candidate_node, last_node, &graph->dist_matrix);
+	for (size_t dest = 0; dest <= active->size; dest++) {
+		const struct tsp_move move = { vacant_idx, dest };
+		deltas[dest] = tsp_graph_evaluate_move(graph, move);
 	}
 
-	/* Find the 2 largest regrets */
-	long regret[2];
-	regret[0] = MIN(deltas[0], deltas[1]);
-	regret[1] = MAX(deltas[0], deltas[1]);
-	for (size_t i = 2; i < active->size; i++) {
-		if (deltas[i] >= regret[1]) {
-			regret[0] = regret[1];
-			regret[1] = deltas[i];
-		} else if (deltas[i] > regret[0]) {
-			regret[0] = deltas[i];
+	/* Find the 2 largest deltas */
+	long max_deltas[2];
+	max_deltas[0] = MIN(deltas[0], deltas[1]);
+	max_deltas[1] = MAX(deltas[0], deltas[1]);
+	for (size_t i = 2; i <= active->size; i++) {
+		if (deltas[i] >= max_deltas[1]) {
+			max_deltas[0] = max_deltas[1];
+			max_deltas[1] = deltas[i];
+		} else if (deltas[i] > max_deltas[0]) {
+			max_deltas[0] = deltas[i];
 		}
 	}
 
-	return regret[1] - regret[0];
+	return max_deltas[1] - max_deltas[0];
 }
 
 /* "deltas" is an auxiliary array that's shared between runs of this function to
@@ -597,7 +599,7 @@ struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const stru
 
 	for (size_t i = 0; i < rcl->size; i++) {
 		struct tsp_move move = *(struct tsp_move*)sp_stack_get(rcl, i);
-		const long regret = tsp_graph_compute_2regret(graph, move, deltas);
+		const long regret = tsp_graph_compute_2regret(graph, move.src, deltas);
 		if (regret > best_regret) {
 			best_move = move;
 			best_regret = regret;
