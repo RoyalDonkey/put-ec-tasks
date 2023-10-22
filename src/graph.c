@@ -339,7 +339,7 @@ void tsp_graph_print(const struct tsp_graph *graph)
 int _print_node(const void *ptr)
 {
 	const struct tsp_node *const node = ptr;
-	printf("Node(x=%4d, y=%4d, cost=%4d)\n", node->x, node->y, node->cost);
+	printf("Node(id=%4d, x=%4d, y=%4d, cost=%4d)\n", node->id, node->x, node->y, node->cost);
 	return 0;
 }
 
