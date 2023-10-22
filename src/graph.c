@@ -588,10 +588,10 @@ unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, struct ts
 	return regret[1] - regret[0];
 }
 
-struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const struct sp_stack *rcl)
+/* "deltas" is an auxiliary array that's shared between runs of this function to
+ * avoid repeatedly allocating and deallocating memory */
+struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const struct sp_stack *rcl, long *deltas)
 {
-	struct sp_stack *const active = graph->nodes_active;
-	long *const deltas = malloc_or_die(active->size * sizeof(long));
 	struct tsp_move best_move = { SIZE_MAX, SIZE_MAX };
 	long best_regret = LONG_MIN;
 
@@ -604,6 +604,5 @@ struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const stru
 		}
 	}
 
-	free(deltas);
 	return best_move;
 }
