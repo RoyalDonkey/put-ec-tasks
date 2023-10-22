@@ -46,6 +46,7 @@ void greedy_cycle_wsc(struct tsp_graph *graph, size_t target_size)
 {
 	struct sp_stack *vacant = graph->nodes_vacant;
 	struct sp_stack *active = graph->nodes_active;
+	long *const deltas = malloc_or_die(target_size * sizeof(long));
 
 	if (active->size == 0 && target_size != 0)
 		tsp_graph_activate_random(graph, 1);
@@ -54,8 +55,16 @@ void greedy_cycle_wsc(struct tsp_graph *graph, size_t target_size)
 		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, node);
 		tsp_graph_activate_node(graph, idx);
 	}
-	/* while (active->size < target_size) { */
-	/* } */
+	while (active->size < target_size) {
+		struct tsp_node node;
+		struct sp_stack *const rcl = tsp_graph_find_rcl(graph, 10, 0.04);
+		const struct tsp_move move = tsp_graph_find_wsc(graph, rcl, 0.5, deltas);
+		sp_stack_destroy(rcl, NULL);
+		node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
+		sp_stack_remove(vacant, move.src, NULL);
+		sp_stack_insert(active, move.dest, &node);
+	}
+	free(deltas);
 }
 
 void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
@@ -138,7 +147,7 @@ int main(void)
 	}
 
 	run_greedy_algorithm("2-regret", greedy_cycle_2regret);
-	/* run_greedy_algorithm("weighted-sum-criterion", greedy_cycle_wsc); */
+	run_greedy_algorithm("weighted-sum-criterion", greedy_cycle_wsc);
 
 	for (size_t i = 0; i < ARRLEN(files); i++) {
 		sp_stack_destroy(nodes[i], NULL);

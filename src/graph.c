@@ -642,3 +642,27 @@ struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const stru
 
 	return best_move;
 }
+
+/* wsc - "Weighted sum criterion" (2-regret + best change to obj. function)
+ * "deltas" is an auxiliary array that's shared between runs of this function to
+ * avoid repeatedly allocating and deallocating memory
+ * "ratio" - 0.0 == greedy cycle, 1.0 == 2-regret */
+struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct sp_stack *rcl, double ratio, long *deltas)
+{
+	struct tsp_move best_move = { SIZE_MAX, SIZE_MAX };
+	double best_criterion = -DBL_MAX;
+	assert(0.0 <= ratio && ratio <= 1.0);
+
+	for (size_t i = 0; i < rcl->size; i++) {
+		struct tsp_move move = *(struct tsp_move*)sp_stack_get(rcl, i);
+		const double regret = tsp_graph_compute_2regret(graph, move.src, deltas);
+		const double delta = tsp_graph_evaluate_move(graph, move);
+		const double criterion = ratio * regret - ((1.0 - ratio) * delta);
+		if (criterion > best_criterion) {
+			best_move = move;
+			best_criterion = regret;
+		}
+	}
+
+	return best_move;
+}
