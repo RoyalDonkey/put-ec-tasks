@@ -49,7 +49,7 @@
 
 \title{Evolutionary Computation Lab II}
 \author{Piotr Kaszubski 148283}
-\date{}
+\date{Monday, October 23, 2023}
 
 \begin{document}
 \maketitle
@@ -74,7 +74,136 @@ The distance matrix should be calculated just after reading an instance and
 then only the distance matrix (no nodes coordinates) should be accessed by
 optimization methods to allow instances defined only by distance matrices.
 
+\section{Corrections from report 1}
+\subsubsection*{Node costs in neighborhood}
+It's been pointed out that neighborhood in the previous report should have
+included node costs (which I intentionally left out when computing nearest
+neighbor). This led to higher (worse) results than what's possible when
+including the cost.  \\
+Fixed in \href{https://github.com/RoyalDonkey/put-ec-tasks/commit/f4ca6c842cff9fb3afcf1d1afff631034c59c6d8}{f4ca6c8}.
+
+\subsubsection*{Major error in greedy cycle}
+Furthermore, I have discovered a major error in my greedy cycle implementation,
+that renders all results incredulous. The error regarded pairwise node
+iteration, which is critical for computing deltas. \\
+Fixed in \href{https://github.com/RoyalDonkey/put-ec-tasks/commit/d66d28c938dc39f43280bdbc76b273e55cfd589b}{d66d28c}.
+
+\vspace{4mm}
+\noindent
+Updated results are available in the \emph{Results} section. \\
+For updated visualizations,
+\href{https://github.com/RoyalDonkey/put-ec-tasks/tree/239c25653774b4275a0a73c46154d6b743279b0d/task1/results}{see here}.
+
+
 \section{Pseudocode}
+\subsection{RCL}
+\begin{description}
+	\item [Input] set of graph nodes \verb`G`, set of candidate nodes \verb`N`,
+		size \verb`S`, percentage \verb`P`
+	\item [Output] An RCL \verb`N'` (subset of \verb`N`) of size \verb`S`,
+		chosen by repeatedly sampling from \verb`P`\% best nodes
+	\item [Steps]
+		\begin{enumerate}\item []
+			\item Initialize \verb`N'` to an empty list.
+			\item While \verb`size(N')` ≠ \verb`S`, do:
+				\begin{enumerate}
+					\item Construct a subset \verb`M` of \verb`N`, which
+						contains a random \verb`P`\% of nodes from \verb`N`.
+					\item If \verb`size(G)` = \verb`0`, then:
+						\begin{enumerate}
+							\item Pick a random node from \verb`M` and move it
+								from \verb`N` to \verb`N'`.
+						\end{enumerate}
+					\item Else If \verb`size(G)` = \verb`1`, then:
+						\begin{enumerate}
+							\item Pick a node from \verb`M` which is the
+								\textbf{nearest neighbor} to the only node in \verb`G`
+								and move it from \verb`N` to \verb`N'`.
+						\end{enumerate}
+					\item Else:
+						\begin{enumerate}
+							\item Pick a node from \verb`M` which constitutes
+								the smallest increase in the objective function
+								(\textbf{greedy cycle}) for \verb`G`; move it
+								from \verb`N` to \verb`N'` .
+						\end{enumerate}
+				\end{enumerate}
+		\end{enumerate}
+\end{description}
+
+\subsection{2\_regret}
+\begin{description}
+	\item [Input] set of graph nodes \verb`G`, candidate node \verb`n`
+	\item [Output] 2-regret of \verb`n` with respect to \verb`G`.
+	\item [Steps]
+		\begin{enumerate}\item []
+			\item Initialize \verb`d1` to the objective function delta if
+				\verb`n` was inserted between the \emph{first} pair of nodes
+				from \verb`G`.
+			\item Initialize \verb`d2` to the objective function delta if
+				\verb`n` was inserted between the \emph{second} pair of nodes
+				from \verb`G` ("second pair" = 2nd and 3rd, \textbf{not} 3rd
+				and 4th!).
+			\item Ensure \verb`d1` > \verb`d2` (swap values if necessary).
+			\item For every remaining (3rd, 4th, …) pair \verb`p` of nodes in
+				\verb`G`, do:
+				\begin{enumerate}
+					\item Compute the objective function delta \verb`d` if
+						\verb`n` was inserted between \verb`p`.
+					\item If \verb`d` > \verb`d1`, then:
+						\begin{enumerate}
+							\item Let \verb`d2` = \verb`d1`.
+							\item Let \verb`d1` = \verb`d`.
+						\end{enumerate}
+					\item Else if \verb`d` > \verb`d2`, then:
+						\begin{enumerate}
+							\item Let \verb`d1` = \verb`d`.
+						\end{enumerate}
+				\end{enumerate}
+			\item Return \verb`d1` - \verb`d2`.
+		\end{enumerate}
+\end{description}
+
+\subsection{2-regret solution}
+\begin{description}
+	\item [Input] A set \verb`N` of nodes.
+	\item [Output] An ordered subset \verb`N'` of \verb`N`, with half of
+		\verb`N`'s cardinality.
+	\item [Steps]
+		\begin{enumerate}\item []
+			\item Initialize \verb`N'` to an empty list.
+			\item While \verb`len(N')` < \verb`len(N)/2`, do:
+				\begin{enumerate}
+					\item Let \verb`rcl` = \verb`RCL(N', 10, 0.04)`.
+					\item Choose node \verb`n` from \verb`N`, such that
+						\verb`2_regret(N', n)` is maximal.
+					\item Remove \verb`n` from \verb`N`.
+					\item Add \verb`n` to \verb`N'`.
+				\end{enumerate}
+		\end{enumerate}
+\end{description}
+
+\subsection{Weighted sum criterion solution (50/50)}
+\begin{description}
+	\item [Input] A set \verb`N` of nodes.
+	\item [Output] An ordered subset \verb`N'` of \verb`N`, with half of
+		\verb`N`'s cardinality.
+	\item [Steps]
+		\begin{enumerate}\item []
+			\item Initialize \verb`N'` to an empty list.
+			\item While \verb`len(N')` < \verb`len(N)/2`, do:
+				\begin{enumerate}
+					\item Let \verb`rcl` = \verb`RCL(N', 10, 0.04)`.
+					\item Choose node \verb`n` from \verb`N`, such that
+						\verb`2_regret(N', n) - delta` is maximal, where
+						\verb`delta` denotes the best (minimal) objective
+						function change attainable by inserting \verb`n`
+						anywhere in \verb`N'`.
+					\item Remove \verb`n` from \verb`N`.
+					\item Add \verb`n` to \verb`N'`.
+				\end{enumerate}
+		\end{enumerate}
+\end{description}
 
 \section{Results}
 \begin{longtable}[c]{|cc|rrr|}
@@ -92,24 +221,74 @@ optimization methods to allow instances defined only by distance matrices.
 	& \verb`TSPD.csv` & 195,876 & 218,919 & 250,422 \\
 	\hline
 
-	\multirow{4}*{nn} & \verb`TSPA.csv` & 110,035 & 116,145 & 125,805 \\
-	& \verb`TSPB.csv` & 106,815 & 116,181 & 124,675 \\
-	& \verb`TSPC.csv` & 62,629 & 66,196 & 71,616 \\
-	& \verb`TSPD.csv` & 62,788 & 66,847 & 71,396 \\
+	\multirow{4}*{nn} & \verb`TSPA.csv` & \st{110,035} 84,471 & \st{116,145} 87,649 & \st{125,805} 95,013 \\
+	& \verb`TSPB.csv` & \st{106,815} 77,448 & \st{116,181} 79,304 & \st{124,675} 82,669 \\
+	& \verb`TSPC.csv` & \st{62,629} 56,304 & \st{66,196} 58,877 & \st{71,616} 63,304 \\
+	& \verb`TSPD.csv` & \st{62,788} 50,335 & \st{66,847} 54,406 & \st{71,396} 59,846 \\
 	\hline
 
-	\multirow{4}*{cycle} & \verb`TSPA.csv` & 113,298 & 123,691 & 129,175 \\
-	& \verb`TSPB.csv` & 111,981 & 120,922 & 131,174 \\
-	& \verb`TSPC.csv` & 67,077 & 72,771	 & 75,763 \\
-	& \verb`TSPD.csv` & 66,193 & 71,606	 & 77,797 \\
+	\multirow{4}*{cycle} & \verb`TSPA.csv` & \st{113,298} 75,666 & \st{123,691} 77,069 & \st{129,175} 80,321 \\
+	& \verb`TSPB.csv` & \st{111,981} 68,764 & \st{120,922} 70,685 & \st{131,174} 76,324 \\
+	& \verb`TSPC.csv` & \st{67,077} 53,226 & \st{72,771} 55,845 & \st{75,763} 58,876 \\
+	& \verb`TSPD.csv` & \st{66,193} 50,409 & \st{71,606} 55,055 & \st{77,797} 60,077 \\
+	\hline
+
+	\multirow{4}*{2-regret} & \verb`TSPA.csv` & 86,224 & 103,385 & 119,577 \\
+	& \verb`TSPB.csv` & 83,179 & 97,807 & 113,449 \\
+	& \verb`TSPC.csv` & 58,778 & 66,161 & 71,821 \\
+	& \verb`TSPD.csv` & 53,396 & 63,387 & 69,441 \\
+	\hline
+
+	\multirow{4}*{wsc} & \verb`TSPA.csv` & 80,427 & 87,553 & 101,498 \\
+	& \verb`TSPB.csv` & 73,310 & 82,983 & 95,733 \\
+	& \verb`TSPC.csv` & 54,306 & 60,334 & 66,962 \\
+	& \verb`TSPD.csv` & 51,420 & 58,478 & 66,263 \\
 	\hline
 \end{longtable}
 
 \section{Visualizations}
+
+\newcommand{\visualization}[3]{%
+\begin{figure}[H]%
+	\begin{adjustwidth}{-3em}{0}%
+		\includegraphics{results/best_#2_#1.pdf}%
+	\end{adjustwidth}%
+	\vspace{-15mm}%
+	\caption{Best #2 solution to #1 (#3)}%
+\end{figure}%
+}
+
+\subsection{TSPA.csv}
+\vspace{-15mm}
+\visualization{TSPA}{2-regret}{119,577}
+\visualization{TSPA}{weighted-sum-criterion}{101,498}
+
+\subsection{TSPB.csv}
+\vspace{-15mm}
+\visualization{TSPB}{2-regret}{113,449}
+\visualization{TSPB}{weighted-sum-criterion}{95,733}
+
+\subsection{TSPC.csv}
+\vspace{-15mm}
+\visualization{TSPC}{2-regret}{71,821}
+\visualization{TSPC}{weighted-sum-criterion}{66,962}
+
+\subsection{TSPD.csv}
+\vspace{-15mm}
+\visualization{TSPD}{2-regret}{69,441}
+\visualization{TSPD}{weighted-sum-criterion}{66,263}
 
 \section{Source code}
 The source code for all the experiments and this report is hosted on GitHub: \\
 \url{https://github.com/RoyalDonkey/put-ec-tasks}
 
 \section{Conclusions}
+After updating the first report, greedy cycle became the best method, and
+results obtained in this report seem to reinforce that -- While 2-regret is
+pretty good, it gives worse solutions and weighing it with greedy cycle always
+leads to improvements.
+
+In hindsight, I don't think implementing Restricted Candidate List was at all
+necessary for this assignment, but I did it anyway (initially I thought I
+needed it, and then it was too late to turn back).
 \end{document}
