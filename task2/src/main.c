@@ -21,7 +21,6 @@ void greedy_cycle_2regret(struct tsp_graph *graph, size_t target_size)
 {
 	struct sp_stack *vacant = graph->nodes_vacant;
 	struct sp_stack *active = graph->nodes_active;
-	long *const deltas = malloc_or_die(target_size * sizeof(long));
 
 	if (active->size == 0 && target_size != 0)
 		tsp_graph_activate_random(graph, 1);
@@ -33,20 +32,18 @@ void greedy_cycle_2regret(struct tsp_graph *graph, size_t target_size)
 	while (active->size < target_size) {
 		struct tsp_node node;
 		struct sp_stack *const rcl = tsp_graph_find_rcl(graph, 10, 0.04);
-		const struct tsp_move move = tsp_graph_find_2regret(graph, rcl, deltas);
+		const struct tsp_move move = tsp_graph_find_2regret(graph, rcl);
 		sp_stack_destroy(rcl, NULL);
 		node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
 		sp_stack_remove(vacant, move.src, NULL);
 		sp_stack_insert(active, move.dest, &node);
 	}
-	free(deltas);
 }
 
 void greedy_cycle_wsc(struct tsp_graph *graph, size_t target_size)
 {
 	struct sp_stack *vacant = graph->nodes_vacant;
 	struct sp_stack *active = graph->nodes_active;
-	long *const deltas = malloc_or_die(target_size * sizeof(long));
 
 	if (active->size == 0 && target_size != 0)
 		tsp_graph_activate_random(graph, 1);
@@ -58,13 +55,12 @@ void greedy_cycle_wsc(struct tsp_graph *graph, size_t target_size)
 	while (active->size < target_size) {
 		struct tsp_node node;
 		struct sp_stack *const rcl = tsp_graph_find_rcl(graph, 10, 0.04);
-		const struct tsp_move move = tsp_graph_find_wsc(graph, rcl, 0.5, deltas);
+		const struct tsp_move move = tsp_graph_find_wsc(graph, rcl, 0.5);
 		sp_stack_destroy(rcl, NULL);
 		node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
 		sp_stack_remove(vacant, move.src, NULL);
 		sp_stack_insert(active, move.dest, &node);
 	}
-	free(deltas);
 }
 
 void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)

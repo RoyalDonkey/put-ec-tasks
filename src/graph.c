@@ -595,45 +595,46 @@ struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, 
 	return moves;
 }
 
-/* "deltas" is an auxiliary array that's shared between runs of this function to
- * avoid repeatedly allocating and deallocating memory */
-unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, size_t vacant_idx, long *deltas)
+unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, size_t vacant_idx)
 {
 	struct sp_stack *const active = graph->nodes_active;
+	long max_deltas[2];
 	assert(active->size >= 2);
 
 	/* Populate an array of hypothetical cost changes (deltas) */
-	for (size_t dest = 0; dest < active->size; dest++) {
+	for (size_t dest = 0; dest < 2; dest++) {
 		const struct tsp_move move = { vacant_idx, dest };
-		deltas[dest] = tsp_graph_evaluate_move(graph, move);
+		max_deltas[dest] = tsp_graph_evaluate_move(graph, move);
 	}
 
-	/* Find the 2 largest deltas */
-	long max_deltas[2];
-	max_deltas[0] = MIN(deltas[0], deltas[1]);
-	max_deltas[1] = MAX(deltas[0], deltas[1]);
-	for (size_t i = 2; i < active->size; i++) {
-		if (deltas[i] >= max_deltas[1]) {
+	if (max_deltas[0] > max_deltas[1]) {
+		const long t = max_deltas[0];
+		max_deltas[0] = max_deltas[1];
+		max_deltas[1] = t;
+	}
+
+	for (size_t dest = 2; dest < active->size; dest++) {
+		const struct tsp_move move = { vacant_idx, dest };
+		const long delta = tsp_graph_evaluate_move(graph, move);
+		if (delta >= max_deltas[1]) {
 			max_deltas[0] = max_deltas[1];
-			max_deltas[1] = deltas[i];
-		} else if (deltas[i] > max_deltas[0]) {
-			max_deltas[0] = deltas[i];
+			max_deltas[1] = delta;
+		} else if (delta > max_deltas[0]) {
+			max_deltas[0] = delta;
 		}
 	}
 
 	return max_deltas[1] - max_deltas[0];
 }
 
-/* "deltas" is an auxiliary array that's shared between runs of this function to
- * avoid repeatedly allocating and deallocating memory */
-struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const struct sp_stack *rcl, long *deltas)
+struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const struct sp_stack *rcl)
 {
 	struct tsp_move best_move = { SIZE_MAX, SIZE_MAX };
 	long best_regret = LONG_MIN;
 
 	for (size_t i = 0; i < rcl->size; i++) {
 		struct tsp_move move = *(struct tsp_move*)sp_stack_get(rcl, i);
-		const long regret = tsp_graph_compute_2regret(graph, move.src, deltas);
+		const long regret = tsp_graph_compute_2regret(graph, move.src);
 		if (regret > best_regret) {
 			best_move = move;
 			best_regret = regret;
@@ -644,10 +645,8 @@ struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const stru
 }
 
 /* wsc - "Weighted sum criterion" (2-regret + best change to obj. function)
- * "deltas" is an auxiliary array that's shared between runs of this function to
- * avoid repeatedly allocating and deallocating memory
  * "ratio" - 0.0 == greedy cycle, 1.0 == 2-regret */
-struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct sp_stack *rcl, double ratio, long *deltas)
+struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct sp_stack *rcl, double ratio)
 {
 	struct tsp_move best_move = { SIZE_MAX, SIZE_MAX };
 	double best_criterion = -DBL_MAX;
@@ -655,7 +654,7 @@ struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct s
 
 	for (size_t i = 0; i < rcl->size; i++) {
 		struct tsp_move move = *(struct tsp_move*)sp_stack_get(rcl, i);
-		const double regret = tsp_graph_compute_2regret(graph, move.src, deltas);
+		const double regret = tsp_graph_compute_2regret(graph, move.src);
 		const double delta = tsp_graph_evaluate_move(graph, move);
 		const double criterion = ratio * regret - ((1.0 - ratio) * delta);
 		if (criterion > best_criterion) {

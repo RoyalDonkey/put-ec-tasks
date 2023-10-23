@@ -67,9 +67,9 @@ size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_mat
 size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, struct tsp_node node1, struct tsp_node node2);
 struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph);
 struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, double p);
-unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, size_t vacant_idx, long *deltas);
-struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const struct sp_stack *rcl, long *deltas);
-struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct sp_stack *rcl, double ratio, long *deltas);
+unsigned long tsp_graph_compute_2regret(const struct tsp_graph *graph, size_t vacant_idx);
+struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const struct sp_stack *rcl);
+struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct sp_stack *rcl, double ratio);
 
 
 #endif /* TSP_GRAPH_H */
