@@ -1,6 +1,7 @@
 #include "graph.h"
 #include "helpers.h"
 #include "../libstaple/src/staple.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
