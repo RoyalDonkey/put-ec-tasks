@@ -108,11 +108,11 @@ void hashmap_destroy(struct hashmap *hashmap)
 
 size_t hashmap_hash(int x1, int y1, int x2, int y2)
 {
-        /* Adapted from the djb2 hash function. It was first reported
-         * by Dan Bernstein.
-         * Source: https://www.sparknotes.com/cs/searching/hashtables/section2/
-         */
-        size_t ret = 5381;
+	/* Adapted from the djb2 hash function. It was first reported
+	 * by Dan Bernstein.
+	 * Source: https://www.sparknotes.com/cs/searching/hashtables/section2/
+	*/
+	size_t ret = 5381;
 	ret = ((ret << 5) + ret) + x1;
 	ret = ((ret << 5) + ret) + y1;
 	ret = ((ret << 5) + ret) + x2;
