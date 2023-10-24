@@ -666,3 +666,38 @@ struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct s
 
 	return best_move;
 }
+
+void tsp_nodes_swap_nodes(struct sp_stack *nodes, size_t idx1, size_t idx2)
+{
+	assert(nodes->elem_size <= 64);
+	assert(sizeof(size_t) <= 64);
+	static char tmp[64];  /* Aux buffer for swaps */
+
+	void *const n1 = sp_stack_get(nodes, idx1);
+	void *const n2 = sp_stack_get(nodes, idx2);
+	memcpy(tmp, n1, nodes->elem_size);
+	memcpy(n1, n2, nodes->elem_size);
+	memcpy(n2, tmp, nodes->elem_size);
+}
+
+void tsp_nodes_swap_edges(struct sp_stack *nodes, size_t idx1, size_t idx2)
+{
+	assert(nodes->elem_size <= 64);
+	assert(sizeof(size_t) <= 64);
+	static char tmp[64];  /* Aux buffer for swaps */
+
+	/* Make sure idx1 < idx2 */
+	if (idx1 > idx2) {
+		*(size_t*)tmp = idx1;
+		idx1 = idx2;
+		idx2 = *(size_t*)tmp;
+	}
+
+	for (size_t i = 0; i < (idx2 - idx1 + 1) / 2; i++) {
+		tsp_nodes_swap_nodes(
+			nodes,
+			(idx1 + i) % nodes->size,
+			(idx2 + nodes->size - i) % nodes->size
+		);
+	}
+}
