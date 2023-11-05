@@ -667,7 +667,7 @@ struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct s
 	return best_move;
 }
 
-void tsp_graph_inter_swap(struct tsp_graph *graph, size_t vacant_idx, size_t active_idx)
+long tsp_graph_inter_swap(struct tsp_graph *graph, size_t vacant_idx, size_t active_idx)
 {
 	struct sp_stack *const vacant = graph->nodes_vacant;
 	struct sp_stack *const active = graph->nodes_active;
@@ -677,29 +677,65 @@ void tsp_graph_inter_swap(struct tsp_graph *graph, size_t vacant_idx, size_t act
 	assert(sizeof(size_t) <= 64);
 	static char tmp[64];  /* Aux buffer for swaps */
 
-	void *const n1 = sp_stack_get(vacant, vacant_idx);
-	void *const n2 = sp_stack_get(active, active_idx);
+	struct tsp_node *const n1 = (struct tsp_node*)sp_stack_get(vacant, vacant_idx);
+	struct tsp_node *const n2 = (struct tsp_node*)sp_stack_get(active, active_idx);
 	memcpy(tmp, n1, vacant->elem_size);
 	memcpy(n1, n2, vacant->elem_size);
 	memcpy(n2, tmp, vacant->elem_size);
+
+	/* Calculate score delta */
+	const size_t n2_prev_idx = (active_idx + active->size - 1) % active->size;
+	const size_t n2_next_idx = (active_idx + 1) % active->size;
+	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(active, n2_prev_idx);
+	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(active, n2_next_idx);
+	return
+		- DIST(*n2, n2_prev, &graph->dist_matrix)
+		- DIST(*n2, n2_next, &graph->dist_matrix)
+		- n2->cost
+		+ DIST(*n1, n2_prev, &graph->dist_matrix)
+		+ DIST(*n1, n2_next, &graph->dist_matrix)
+		+ n1->cost;
 }
 
-void tsp_nodes_swap_nodes(struct sp_stack *nodes, size_t idx1, size_t idx2)
+long tsp_graph_swap_nodes(struct tsp_graph *graph, size_t idx1, size_t idx2)
 {
-	assert(nodes->elem_size <= 64);
+	struct sp_stack *const active = graph->nodes_active;
+
+	assert(active->elem_size <= 64);
 	assert(sizeof(size_t) <= 64);
 	static char tmp[64];  /* Aux buffer for swaps */
 
-	void *const n1 = sp_stack_get(nodes, idx1);
-	void *const n2 = sp_stack_get(nodes, idx2);
-	memcpy(tmp, n1, nodes->elem_size);
-	memcpy(n1, n2, nodes->elem_size);
-	memcpy(n2, tmp, nodes->elem_size);
+	struct tsp_node *const n1 = (struct tsp_node*)sp_stack_get(active, idx1);
+	struct tsp_node *const n2 = (struct tsp_node*)sp_stack_get(active, idx2);
+	memcpy(tmp, n1, active->elem_size);
+	memcpy(n1, n2, active->elem_size);
+	memcpy(n2, tmp, active->elem_size);
+
+	/* Calculate score delta */
+	const size_t n1_prev_idx = (idx1 + active->size - 1) % active->size;
+	const size_t n1_next_idx = (idx1 + 1) % active->size;
+	const size_t n2_prev_idx = (idx2 + active->size - 1) % active->size;
+	const size_t n2_next_idx = (idx2 + 1) % active->size;
+	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(active, n1_prev_idx);
+	const struct tsp_node n1_next = *(struct tsp_node*)sp_stack_get(active, n1_next_idx);
+	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(active, n2_prev_idx);
+	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(active, n2_next_idx);
+	return
+		- DIST(*n1, n1_prev, &graph->dist_matrix)
+		- DIST(*n1, n1_next, &graph->dist_matrix)
+		- DIST(*n2, n2_prev, &graph->dist_matrix)
+		- DIST(*n2, n2_next, &graph->dist_matrix)
+		+ DIST(*n2, n1_prev, &graph->dist_matrix)
+		+ DIST(*n2, n1_next, &graph->dist_matrix)
+		+ DIST(*n1, n2_prev, &graph->dist_matrix)
+		+ DIST(*n1, n2_next, &graph->dist_matrix);
 }
 
-void tsp_nodes_swap_edges(struct sp_stack *nodes, size_t idx1, size_t idx2)
+long tsp_graph_swap_edges(struct tsp_graph *graph, size_t idx1, size_t idx2)
 {
-	assert(nodes->elem_size <= 64);
+	struct sp_stack *const active = graph->nodes_active;
+
+	assert(active->elem_size <= 64);
 	assert(sizeof(size_t) <= 64);
 	static char tmp[64];  /* Aux buffer for swaps */
 
@@ -711,10 +747,26 @@ void tsp_nodes_swap_edges(struct sp_stack *nodes, size_t idx1, size_t idx2)
 	}
 
 	for (size_t i = 0; i < (idx2 - idx1 + 1) / 2; i++) {
-		tsp_nodes_swap_nodes(
-			nodes,
-			(idx1 + i) % nodes->size,
-			(idx2 + nodes->size - i) % nodes->size
-		);
+		const size_t swap_idx1 = (idx1 + i) % active->size;
+		const size_t swap_idx2 = (idx2 + active->size - i) % active->size;
+		struct tsp_node *const n1 = (struct tsp_node*)sp_stack_get(active, swap_idx1);
+		struct tsp_node *const n2 = (struct tsp_node*)sp_stack_get(active, swap_idx2);
+		memcpy(tmp, n1, active->elem_size);
+		memcpy(n1, n2, active->elem_size);
+		memcpy(n2, tmp, active->elem_size);
 	}
+
+	/* Calculate score delta
+	 * note the reversed idx1 and idx2, because of the swaps done earlier */
+	const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(active, idx2);
+	const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(active, idx1);
+	const size_t n1_prev_idx = (idx2 + active->size - 1) % active->size;
+	const size_t n2_next_idx = (idx1 + 1) % active->size;
+	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(active, n1_prev_idx);
+	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(active, n2_next_idx);
+	return
+		- DIST(n1, n1_prev, &graph->dist_matrix)
+		- DIST(n2, n2_next, &graph->dist_matrix)
+		+ DIST(n1, n2_next, &graph->dist_matrix)
+		+ DIST(n2, n1_prev, &graph->dist_matrix);
 }

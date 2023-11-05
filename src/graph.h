@@ -72,8 +72,8 @@ struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const stru
 struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct sp_stack *rcl, double ratio);
 
 
-void tsp_graph_inter_swap(struct tsp_graph *graph, size_t vacant_idx, size_t active_idx);
-void tsp_nodes_swap_nodes(struct sp_stack *nodes, size_t idx1, size_t idx2);
-void tsp_nodes_swap_edges(struct sp_stack *nodes, size_t idx1, size_t idx2);
+long tsp_graph_inter_swap(struct tsp_graph *graph, size_t vacant_idx, size_t active_idx);
+long tsp_graph_swap_nodes(struct tsp_graph *graph, size_t idx1, size_t idx2);
+long tsp_graph_swap_edges(struct tsp_graph *graph, size_t idx1, size_t idx2);
 
 #endif /* TSP_GRAPH_H */
