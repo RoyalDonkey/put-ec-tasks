@@ -90,9 +90,9 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 			greedy_algo(graph, target_size);
 
 			const unsigned long score = tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix);
-			score_min[i] = MIN(score, score_min[i]);
-			if (score > score_max[i]) {
-				score_max[i] = score;
+			score_max[i] = MAX(score, score_max[i]);
+			if (score < score_min[i]) {
+				score_min[i] = score;
 				tsp_graph_copy(best_solution[i], graph);
 			}
 			score_sum[i] += score;
@@ -104,9 +104,9 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 			greedy_algo(graph, target_size);
 
 			const unsigned long score = tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix);
-			score_min[i] = MIN(score, score_min[i]);
-			if (score > score_max[i]) {
-				score_max[i] = score;
+			score_max[i] = MAX(score, score_max[i]);
+			if (score < score_min[i]) {
+				score_min[i] = score;
 				tsp_graph_copy(best_solution[i], graph);
 			}
 			score_sum[i] += score;
