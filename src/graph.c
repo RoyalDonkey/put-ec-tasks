@@ -667,6 +667,23 @@ struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct s
 	return best_move;
 }
 
+void tsp_graph_inter_swap(struct tsp_graph *graph, size_t vacant_idx, size_t active_idx)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+
+	assert(active->elem_size <= 64);
+	assert(active->elem_size == vacant->elem_size);
+	assert(sizeof(size_t) <= 64);
+	static char tmp[64];  /* Aux buffer for swaps */
+
+	void *const n1 = sp_stack_get(vacant, vacant_idx);
+	void *const n2 = sp_stack_get(active, active_idx);
+	memcpy(tmp, n1, vacant->elem_size);
+	memcpy(n1, n2, vacant->elem_size);
+	memcpy(n2, tmp, vacant->elem_size);
+}
+
 void tsp_nodes_swap_nodes(struct sp_stack *nodes, size_t idx1, size_t idx2)
 {
 	assert(nodes->elem_size <= 64);
