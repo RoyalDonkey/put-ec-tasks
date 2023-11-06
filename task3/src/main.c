@@ -8,11 +8,12 @@
 typedef void (*lsearch_func_t)(struct tsp_graph *graph);
 
 /* Auxiliary struct for defining intra moves */
-#define IMTYPE_NODES 0
-#define IMTYPE_EDGES 1
-struct intra_move {
+#define MOVE_TYPE_NODES 0  /* intra-route node swap */
+#define MOVE_TYPE_EDGES 1  /* intra-route edge swap */
+#define MOVE_TYPE_INTER 2  /* inter-route node swap */
+struct lsearch_move {
 	struct tsp_move indices;
-	char type;  /* IMTYPE_NODES or IMTYPE_EDGES */
+	char type;
 };
 
 /* Global variables */
@@ -31,38 +32,48 @@ static const char *graph_files[] = {
 static struct sp_stack *nodes[ARRLEN(nodes_files)];
 static struct tsp_graph *starting_graphs[ARRLEN(graph_files)];
 
-void lsearch_greedy_intra(struct tsp_graph *graph);
+void lsearch_greedy(struct tsp_graph *graph);
 
-struct sp_stack *init_intra_moves(size_t n_nodes)
+struct sp_stack *init_moves(size_t n_nodes)
 {
-	const size_t n_moves = n_nodes * (n_nodes - 1);
-	struct sp_stack *const moves = sp_stack_create(sizeof(struct intra_move), n_moves);
+	const size_t n_moves = n_nodes * (n_nodes - 1) + n_nodes * n_nodes;
+	struct sp_stack *const moves = sp_stack_create(sizeof(struct lsearch_move), n_moves);
 	for (size_t i = 0; i < n_nodes; i++) {
 		for (size_t j = i; j < n_nodes; j++) {
-			struct intra_move m;
+			struct lsearch_move m;
 			m.indices.src = i;
 			m.indices.dest = j;
-			m.type = IMTYPE_NODES;
+			m.type = MOVE_TYPE_NODES;
 			sp_stack_push(moves, &m);
 		}
 	}
 	for (size_t i = 0; i < n_nodes; i++) {
 		for (size_t j = i; j < n_nodes; j++) {
-			struct intra_move m;
+			struct lsearch_move m;
 			m.indices.src = i;
 			m.indices.dest = j;
-			m.type = IMTYPE_EDGES;
+			m.type = MOVE_TYPE_EDGES;
 			sp_stack_push(moves, &m);
 		}
 	}
+	for (size_t i = 0; i < n_nodes; i++) {
+		for (size_t j = 0; j < n_nodes; j++) {
+			struct lsearch_move m;
+			m.indices.src = i;
+			m.indices.dest = j;
+			m.type = MOVE_TYPE_INTER;
+			sp_stack_push(moves, &m);
+		}
+	}
+
 	return moves;
 }
 
-void lsearch_greedy_intra(struct tsp_graph *graph)
+void lsearch_greedy(struct tsp_graph *graph)
 {
 	struct sp_stack *const active = graph->nodes_active;
-	struct sp_stack *const all_moves = init_intra_moves(active->size);
-	struct sp_stack *const moves = sp_stack_create(sizeof(struct intra_move), all_moves->size);
+	struct sp_stack *const all_moves = init_moves(active->size);
+	struct sp_stack *const moves = sp_stack_create(sizeof(struct lsearch_move), all_moves->size);
 
 	bool did_improve = true;
 	while (did_improve) {
@@ -70,28 +81,37 @@ void lsearch_greedy_intra(struct tsp_graph *graph)
 		did_improve = false;
 		while (moves->size != 0) {
 			const size_t move_idx = randint(0, moves->size - 1);
-			const struct intra_move m = *(struct intra_move*)sp_stack_get(moves, move_idx);
+			const struct lsearch_move m = *(struct lsearch_move*)sp_stack_get(moves, move_idx);
 			sp_stack_qremove(moves, move_idx, NULL);
 
-			long (*eval_func)(const struct sp_stack*, const struct tsp_dist_matrix *, size_t, size_t);
-			void (*swap_func)(struct sp_stack*, size_t, size_t);
+			long delta;
 			switch (m.type) {
-				case IMTYPE_NODES:
-					eval_func = tsp_nodes_evaluate_swap_nodes;
-					swap_func = tsp_nodes_swap_nodes;
+				case MOVE_TYPE_NODES:
+					delta = tsp_nodes_evaluate_swap_nodes(active, &graph->dist_matrix, m.indices.src, m.indices.dest);
+					if (delta < 0) {
+						tsp_nodes_swap_nodes(active, m.indices.src, m.indices.dest);
+						did_improve = true;
+					}
 				break;
-				case IMTYPE_EDGES:
-					eval_func = tsp_nodes_evaluate_swap_edges;
-					swap_func = tsp_nodes_swap_edges;
+				case MOVE_TYPE_EDGES:
+					delta = tsp_nodes_evaluate_swap_edges(active, &graph->dist_matrix, m.indices.src, m.indices.dest);
+					if (delta < 0) {
+						tsp_nodes_swap_edges(active, m.indices.src, m.indices.dest);
+						did_improve = true;
+					}
+				break;
+				case MOVE_TYPE_INTER:
+					delta = tsp_graph_evaluate_inter_swap(graph, m.indices.src, m.indices.dest);
+					if (delta < 0) {
+						tsp_graph_inter_swap(graph, m.indices.src, m.indices.dest);
+						did_improve = true;
+					}
 				break;
 				default:
 					assert(0);
 				break;
 			}
-			const long delta = eval_func(active, &graph->dist_matrix, m.indices.src, m.indices.dest);
-			if (delta < 0) {
-				swap_func(active, m.indices.src, m.indices.dest);
-				did_improve = true;
+			if (did_improve) {
 				break;
 			}
 		}
@@ -171,8 +191,8 @@ int main(void)
 		starting_graphs[i] = tsp_graph_import(graph_files[i]);
 	}
 
-	run_lsearch_algorithm("ls-greedy-intra-random", lsearch_greedy_intra, true);
-	run_lsearch_algorithm("ls-greedy-intra-preset", lsearch_greedy_intra, false);
+	run_lsearch_algorithm("ls-greedy-random", lsearch_greedy, true);
+	run_lsearch_algorithm("ls-greedy-preset", lsearch_greedy, false);
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		sp_stack_destroy(nodes[i], NULL);
