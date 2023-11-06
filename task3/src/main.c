@@ -45,13 +45,6 @@ struct sp_stack *init_moves(size_t n_nodes)
 			m.indices.dest = j;
 			m.type = MOVE_TYPE_NODES;
 			sp_stack_push(moves, &m);
-		}
-	}
-	for (size_t i = 0; i < n_nodes; i++) {
-		for (size_t j = i; j < n_nodes; j++) {
-			struct lsearch_move m;
-			m.indices.src = i;
-			m.indices.dest = j;
 			m.type = MOVE_TYPE_EDGES;
 			sp_stack_push(moves, &m);
 		}
