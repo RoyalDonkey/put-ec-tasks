@@ -33,6 +33,7 @@ static struct sp_stack *nodes[ARRLEN(nodes_files)];
 static struct tsp_graph *starting_graphs[ARRLEN(graph_files)];
 
 void lsearch_greedy(struct tsp_graph *graph);
+void lsearch_steepest(struct tsp_graph *graph);
 
 struct sp_stack *init_moves(size_t n_nodes)
 {
@@ -114,6 +115,72 @@ void lsearch_greedy(struct tsp_graph *graph)
 	sp_stack_destroy(all_moves, NULL);
 }
 
+void lsearch_steepest(struct tsp_graph *graph)
+{
+	struct sp_stack *const active = graph->nodes_active;
+	struct sp_stack *const vacant = graph->nodes_vacant;
+
+	bool did_improve = true;
+	while (did_improve) {
+		struct lsearch_move best_move = {0};
+		long min_delta = 0;
+		did_improve = false;
+
+		for (size_t i = 0; i < active->size; i++) {
+			for (size_t j = i; j < active->size; j++) {
+				long delta;
+
+				delta = tsp_nodes_evaluate_swap_nodes(active, &graph->dist_matrix, i, j);
+				if (delta < min_delta) {
+					min_delta = delta;
+					best_move.indices.src = i;
+					best_move.indices.dest = j;
+					best_move.type = MOVE_TYPE_NODES;
+					did_improve = true;
+				}
+
+				delta = tsp_nodes_evaluate_swap_edges(active, &graph->dist_matrix, i, j);
+				if (delta < min_delta) {
+					min_delta = delta;
+					best_move.indices.src = i;
+					best_move.indices.dest = j;
+					best_move.type = MOVE_TYPE_EDGES;
+					did_improve = true;
+				}
+			}
+		}
+
+		for (size_t i = 0; i < active->size; i++) {
+			for (size_t j = 0; j < vacant->size; j++) {
+				const long delta = tsp_graph_evaluate_inter_swap(graph, i, j);
+				if (delta < min_delta) {
+					min_delta = delta;
+					best_move.indices.src = i;
+					best_move.indices.dest = j;
+					best_move.type = MOVE_TYPE_INTER;
+					did_improve = true;
+				}
+			}
+		}
+
+		if (did_improve) {
+			const size_t i = best_move.indices.src,
+			             j = best_move.indices.dest;
+			switch (best_move.type) {
+				case MOVE_TYPE_NODES:
+					tsp_nodes_swap_nodes(active, i, j);
+				break;
+				case MOVE_TYPE_EDGES:
+					tsp_nodes_swap_edges(active, i, j);
+				break;
+				case MOVE_TYPE_INTER:
+					tsp_graph_inter_swap(graph, i, j);
+				break;
+			}
+		}
+	}
+}
+
 void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo, bool random_start)
 {
 	unsigned long score_min[ARRLEN(nodes_files)];
@@ -186,6 +253,8 @@ int main(void)
 
 	run_lsearch_algorithm("ls-greedy-random", lsearch_greedy, true);
 	run_lsearch_algorithm("ls-greedy-preset", lsearch_greedy, false);
+	run_lsearch_algorithm("ls-steepest-random", lsearch_steepest, true);
+	run_lsearch_algorithm("ls-steepest-preset", lsearch_steepest, false);
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		sp_stack_destroy(nodes[i], NULL);
