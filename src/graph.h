@@ -77,7 +77,7 @@ void tsp_nodes_swap_nodes(struct sp_stack *nodes, size_t idx1, size_t idx2);
 void tsp_nodes_swap_edges(struct sp_stack *nodes, size_t idx1, size_t idx2);
 
 long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_idx, size_t active_idx);
-long tsp_graph_evaluate_swap_nodes(const struct tsp_graph *graph, size_t idx1, size_t idx2);
-long tsp_graph_evaluate_swap_edges(const struct tsp_graph *graph, size_t idx1, size_t idx2);
+long tsp_nodes_evaluate_swap_nodes(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2);
+long tsp_nodes_evaluate_swap_edges(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2);
 
 #endif /* TSP_GRAPH_H */

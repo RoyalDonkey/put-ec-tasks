@@ -741,35 +741,31 @@ long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_
 		+ n1.cost;
 }
 
-long tsp_graph_evaluate_swap_nodes(const struct tsp_graph *graph, size_t idx1, size_t idx2)
+long tsp_nodes_evaluate_swap_nodes(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2)
 {
-	const struct sp_stack *const active = graph->nodes_active;
-
-	const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(active, idx1);
-	const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(active, idx2);
-	const size_t n1_prev_idx = (idx1 + active->size - 1) % active->size;
-	const size_t n1_next_idx = (idx1 + 1) % active->size;
-	const size_t n2_prev_idx = (idx2 + active->size - 1) % active->size;
-	const size_t n2_next_idx = (idx2 + 1) % active->size;
-	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(active, n1_prev_idx);
-	const struct tsp_node n1_next = *(struct tsp_node*)sp_stack_get(active, n1_next_idx);
-	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(active, n2_prev_idx);
-	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(active, n2_next_idx);
+	const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(nodes, idx1);
+	const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(nodes, idx2);
+	const size_t n1_prev_idx = (idx1 + nodes->size - 1) % nodes->size;
+	const size_t n1_next_idx = (idx1 + 1) % nodes->size;
+	const size_t n2_prev_idx = (idx2 + nodes->size - 1) % nodes->size;
+	const size_t n2_next_idx = (idx2 + 1) % nodes->size;
+	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(nodes, n1_prev_idx);
+	const struct tsp_node n1_next = *(struct tsp_node*)sp_stack_get(nodes, n1_next_idx);
+	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(nodes, n2_prev_idx);
+	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(nodes, n2_next_idx);
 	return
-		- DIST(n1, n1_prev, &graph->dist_matrix)
-		- DIST(n1, n1_next, &graph->dist_matrix)
-		- DIST(n2, n2_prev, &graph->dist_matrix)
-		- DIST(n2, n2_next, &graph->dist_matrix)
-		+ DIST(n2, n1_prev, &graph->dist_matrix)
-		+ DIST(n2, n1_next, &graph->dist_matrix)
-		+ DIST(n1, n2_prev, &graph->dist_matrix)
-		+ DIST(n1, n2_next, &graph->dist_matrix);
+		- DIST(n1, n1_prev, matrix)
+		- DIST(n1, n1_next, matrix)
+		- DIST(n2, n2_prev, matrix)
+		- DIST(n2, n2_next, matrix)
+		+ DIST(n2, n1_prev.id != n2.id ? n1_prev : n1, matrix)
+		+ DIST(n2, n1_next.id != n2.id ? n1_next : n1, matrix)
+		+ DIST(n1, n2_prev.id != n1.id ? n2_prev : n2, matrix)
+		+ DIST(n1, n2_next.id != n1.id ? n2_next : n2, matrix);
 }
 
-long tsp_graph_evaluate_swap_edges(const struct tsp_graph *graph, size_t idx1, size_t idx2)
+long tsp_nodes_evaluate_swap_edges(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2)
 {
-	const struct sp_stack *const active = graph->nodes_active;
-
 	/* Make sure idx1 < idx2 */
 	if (idx1 > idx2) {
 		const size_t tmp = idx1;
@@ -777,15 +773,15 @@ long tsp_graph_evaluate_swap_edges(const struct tsp_graph *graph, size_t idx1, s
 		idx2 = tmp;
 	}
 
-	const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(active, idx1);
-	const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(active, idx2);
-	const size_t n1_prev_idx = (idx1 + active->size - 1) % active->size;
-	const size_t n2_next_idx = (idx2 + 1) % active->size;
-	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(active, n1_prev_idx);
-	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(active, n2_next_idx);
+	const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(nodes, idx1);
+	const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(nodes, idx2);
+	const size_t n1_prev_idx = (idx1 + nodes->size - 1) % nodes->size;
+	const size_t n2_next_idx = (idx2 + 1) % nodes->size;
+	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(nodes, n1_prev_idx);
+	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(nodes, n2_next_idx);
 	return
-		- DIST(n1, n1_prev, &graph->dist_matrix)
-		- DIST(n2, n2_next, &graph->dist_matrix)
-		+ DIST(n1, n2_next, &graph->dist_matrix)
-		+ DIST(n2, n1_prev, &graph->dist_matrix);
+		- DIST(n1, n1_prev, matrix)
+		- DIST(n2, n2_next, matrix)
+		+ DIST(n1, n2_next.id != n1.id ? n2_next : n2, matrix)
+		+ DIST(n2, n1_prev.id != n2.id ? n1_prev : n1, matrix);
 }
