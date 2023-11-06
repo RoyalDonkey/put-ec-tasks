@@ -689,6 +689,8 @@ void tsp_nodes_swap_nodes(struct sp_stack *nodes, size_t idx1, size_t idx2)
 	assert(nodes->elem_size <= 64);
 	assert(sizeof(size_t) <= 64);
 	static char tmp[64];  /* Aux buffer for swaps */
+	if (idx1 == idx2)
+		return;
 
 	void *const n1 = sp_stack_get(nodes, idx1);
 	void *const n2 = sp_stack_get(nodes, idx2);
