@@ -78,7 +78,7 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo, bool 
 		printf("%-20s\t%8lu\t%8lu\t%8lu\n",
 			nodes_files[i],
 			score_min[i],
-			ROUND(score_sum[i] / 400),
+			ROUND(score_sum[i] / 200),
 			score_max[i]
 		);
 		strncpy(instance_fpath, nodes_files[i], ARRLEN(instance_fpath) - 1);
