@@ -14,7 +14,7 @@ LIBTSP = libtsp.a
 LIBSTAPLE = libstaple/libstaple.a
 TASKS = task1 task2 task3
 
-.PHONY: directories all clean debug profile
+.PHONY: directories all clean debug profile fast
 
 all: directories $(TASKS)
 
@@ -46,6 +46,9 @@ debug: clean all
 profile: CFLAGS += -pg
 profile: LDFLAGS += -pg
 profile: clean all
+
+fast: CFLAGS += -Wno-error -DNDEBUG
+fast: clean all
 
 task%: $(LIBTSP)
 	@$(MAKE) -C $@

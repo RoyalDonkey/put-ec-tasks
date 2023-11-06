@@ -14,7 +14,7 @@ SRCS := $(foreach dir, $(SRCDIRS), $(wildcard $(dir)/*.c))
 OBJS := $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SRCS:.c=.o))
 TARGET = task3
 
-.PHONY: directories all main clean debug profile
+.PHONY: directories all main clean debug profile fast
 
 all: directories $(TARGET)
 
@@ -32,6 +32,9 @@ clean:
 
 debug: CFLAGS += -g -Og
 debug: clean all
+
+fast: CFLAGS += -Wno-error -DNDEBUG
+fast: clean all
 
 profile: CFLAGS += -pg
 profile: LDFLAGS += -pg

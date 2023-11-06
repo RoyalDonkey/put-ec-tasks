@@ -89,14 +89,15 @@ struct tsp_graph *tsp_graph_import(const char *fpath)
 	FILE *f;
 	struct tsp_graph *const graph = malloc_or_die(sizeof(struct tsp_graph));
 	struct sp_stack *all_nodes;
-	int n_vacant, n_active, n_total;
+	int n_vacant, n_active, n_total, err;
 	unsigned next_id = 0;
 
 	f = fopen(fpath, "r");
 	if (f == NULL) {
 		error(("file not found: %s", fpath));
 	}
-	assert(2 == fscanf(f, "%d;%d\n", &n_vacant, &n_active));
+	err = fscanf(f, "%d;%d\n", &n_vacant, &n_active);
+	assert(err == 2);
 	n_total = n_vacant + n_active;
 
 	graph->nodes_vacant = sp_stack_create(sizeof(struct tsp_node), n_total);
