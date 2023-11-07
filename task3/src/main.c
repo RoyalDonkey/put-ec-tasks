@@ -3,6 +3,8 @@
 #include <libgen.h>
 #include <string.h>
 #include <stdbool.h>
+#include <time.h>
+#include <float.h>
 
 /* Typedefs */
 typedef void (*lsearch_func_t)(struct tsp_graph *graph);
@@ -186,12 +188,18 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo, bool 
 	unsigned long score_min[ARRLEN(nodes_files)];
 	unsigned long score_max[ARRLEN(nodes_files)];
 	double        score_sum[ARRLEN(nodes_files)];
+	double time_min[ARRLEN(nodes_files)];
+	double time_max[ARRLEN(nodes_files)];
+	double time_sum[ARRLEN(nodes_files)];
 	struct tsp_graph *best_solution[ARRLEN(nodes_files)];
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		score_min[i] = ULONG_MAX;
 		score_max[i] = 0;
 		score_sum[i] = 0.0;
+		time_min[i] = DBL_MAX;
+		time_max[i] = 0.0;
+		time_sum[i] = 0.0;
 	}
 
 	random_seed(0);
@@ -209,15 +217,22 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo, bool 
 				tsp_graph_copy(graph, starting_graphs[i]);
 			}
 
+			clock_t time_before, time_after;
+			time_before = clock();
 			lsearch_algo(graph);
+			time_after = clock();
 
 			const unsigned long score = tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix);
+			const double time = (double)(time_after - time_before) / CLOCKS_PER_SEC;
 			score_min[i] = MIN(score, score_min[i]);
+			time_min[i] = MIN(time, time_min[i]);
+			time_max[i] = MAX(time, time_max[i]);
 			if (score > score_max[i]) {
 				score_max[i] = score;
 				tsp_graph_copy(best_solution[i], graph);
 			}
 			score_sum[i] += score;
+			time_sum[i] += time;
 		}
 
 		tsp_graph_destroy(graph);
@@ -240,6 +255,16 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo, bool 
 		sprintf(out_fname, "results/best_%s_%s.pdf", label, basename(instance_fpath));
 		tsp_graph_to_pdf(best_solution[i], out_fname);
 		tsp_graph_destroy(best_solution[i]);
+	}
+	printf("running time (milliseconds):\n");
+	printf("%-20s\t%8s\t%8s\t%8s\n", "file", "min", "avg", "max");
+	for (size_t i = 0; i < ARRLEN(best_solution); i++) {
+		printf("%-20s\t%8.3f\t%8.3f\t%8.3f\n",
+			nodes_files[i],
+			1000.0 * time_min[i],
+			1000.0 * time_sum[i] / 200.0,
+			1000.0 * time_max[i]
+		);
 	}
 }
 
