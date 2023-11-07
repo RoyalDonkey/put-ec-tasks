@@ -12,7 +12,7 @@ SRCS := $(foreach dir, $(SRCDIRS), $(wildcard $(dir)/*.c))
 OBJS := $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SRCS:.c=.o))
 LIBTSP = libtsp.a
 LIBSTAPLE = libstaple/libstaple.a
-TASKS = task1 task2 task3
+TASKS = task1 task2 task3 task4
 
 .PHONY: directories all clean debug profile fast
 
