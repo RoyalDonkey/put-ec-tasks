@@ -49,7 +49,7 @@
 
 \title{Evolutionary Computation Lab III}
 \author{Piotr Kaszubski 148283}
-\date{}
+\date{Tuesday, November  7, 2023}
 
 \begin{document}
 \maketitle
@@ -75,27 +75,266 @@ then only the distance matrix (no nodes coordinates) should be accessed by
 optimization methods to allow instances defined only by distance matrices.
 
 \section{Corrections from previous reports}
-% TODO: the problem with exporting graphs of worst solutions (all plots invalid...)
+While working on this report, I discovered a trivial but serious bug that
+unfortunately affected the previous 2 reports: when exporting the found
+solutions (for the visualization plots), I was \emph{maximizing} the score
+instead of minimizing. That means all the plots you have seen thus far have
+been the \emph{worst} solutions, not best. The scores in tables were unaffected
+by this error. \\
+Fixed in \href{https://github.com/RoyalDonkey/put-ec-tasks/commit/c2604bc7d0fa83ca02c61c3e38b789cc1ecae52a}{c2604bc}.
 
+\vspace{4mm}
+\noindent
+I rerun all experiments from report 1 and 2 and pushed the new plots. If you
+wish, you can examine them here:
+\begin{itemize}
+	\item \href{https://github.com/RoyalDonkey/put-ec-tasks/tree/c2604bc7d0fa83ca02c61c3e38b789cc1ecae52a/task1/results}{updated report 1 plots}
+	\item \href{https://github.com/RoyalDonkey/put-ec-tasks/tree/c2604bc7d0fa83ca02c61c3e38b789cc1ecae52a/task2/results}{updated report 2 plots}
+\end{itemize}
+
+\newpage
 \section{Pseudocode}
 
+\subsection{InitMoves}
+\begin{description}
+	\item [Input] set of graph nodes \verb`G`, set of candidate nodes \verb`N`
+	\item [Output] A set \verb`M` of all possible moves. Each move is comprised
+		of the \emph{move type} (intra-route node swap, intra-route edge swap,
+		or inter-route node swap) and \emph{indices} of the nodes/edges
+		involved.
+	\item [Steps]
+		\begin{enumerate}\item []
+			\item Initialize \verb`M` to an empty list.
+			\item For \verb`i` = 1{\ldots}\verb`sizeof(G)`, do:
+				\begin{enumerate}
+					\item For \verb`j` = \verb`i`{\ldots}\verb`sizeof(G)`, do:
+						\begin{enumerate}
+							\item Add \verb`(i, j,` intra-route node swap\verb`)` move to \verb`M`.
+							\item Add \verb`(i, j,` intra-route edge swap\verb`)` move to \verb`M`.
+						\end{enumerate}
+				\end{enumerate}
+			\item For \verb`i` = 1{\ldots}\verb`sizeof(G)`, do:
+				\begin{enumerate}
+					\item For \verb`j` = \verb`1`{\ldots}\verb`sizeof(N)`, do:
+						\begin{enumerate}
+							\item Add \verb`(i, j,` inter-route node swap\verb`)` move to \verb`M`.
+						\end{enumerate}
+				\end{enumerate}
+		\end{enumerate}
+	\item [Observation]
+		\begin{itemize}\item []
+			\item Since moves are index-based, and all graphs we will be
+				dealing with have an equal number of nodes, \verb`InitMoves()`
+				always has the same return value. To simplify things, I will
+				call it without parameters.
+		\end{itemize}
+\end{description}
+
+\subsection{Greedy local search}
+\begin{description}
+	\item [Input] set of graph nodes \verb`G`, set of candidate nodes \verb`N`
+	\item [Output] A set of graph nodes \verb`G'`$ ∈ ($\verb`G`$∪$\verb`N`), \emph{at least} as good as
+		\verb`G` w.r.t.\ the objective function, where \verb`sizeof(G')` = \verb`sizeof(G)`.
+	\item [Steps]
+		\begin{enumerate}\item []
+			\item Let \verb`M` = \verb`InitMoves()`.
+			\item Let \verb`did_improve` = \verb`true`.
+			\item While \verb`did_improve`, do:
+				\begin{enumerate}
+					\item Set \verb`did_improve` = \verb`false`.
+					\item Let \verb`M'` be a copy of \verb`M`.
+					\item While \verb`sizeof(M') > 0`, do:
+						\begin{enumerate}
+							\item Pop a random move from \verb`M'` into \verb`m`.
+							\item Compute score delta \verb`d` of \verb`m`.
+							\item If \verb`d < 0`, then:
+								\begin{enumerate}
+									\item Perform \verb`m`.
+									\item Set \verb`did_improve` = \verb`true`.
+									\item Break to outer loop.
+								\end{enumerate}
+						\end{enumerate}
+				\end{enumerate}
+		\end{enumerate}
+\end{description}
+
+\subsection{Steepest local search}
+\begin{description}
+	\item [Input] set of graph nodes \verb`G`, set of candidate nodes \verb`N`
+	\item [Output] A set of graph nodes \verb`G'`$ ∈ ($\verb`G`$∪$\verb`N`),
+		\emph{at least} as good as \verb`G` w.r.t.\ the objective function,
+		where \verb`sizeof(G')` = \verb`sizeof(G)`.
+	\item [Steps]
+		\begin{enumerate}\item []
+			\item Let \verb`did_improve` = \verb`true`.
+			\item While \verb`did_improve`, do:
+				\begin{enumerate}
+					\item Set \verb`did_improve` = \verb`false`.
+					\item Find a move \verb`m` from \verb`InitMoves()` with the lowest delta \verb`d`.
+					\item If \verb`d < 0`, then:
+						\begin{enumerate}
+							\item Perform \verb`m`.
+							\item Set \verb`did_improve` = \verb`true`.
+						\end{enumerate}
+				\end{enumerate}
+		\end{enumerate}
+	\item [Remarks]
+		\begin{itemize}\item []
+			\item I used \verb`InitMoves()` here for simplification, but the
+				actual implementation does not waste resources on constructing
+				a complete neighborhood and simply iterates through the
+				possible moves one-at-a-time.
+		\end{itemize}
+\end{description}
+
+\newpage
 \section{Results}
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	 & \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	 & \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
+
+	\multirow{2}*{greedy-random} & 264,383 (240,873--292,180) & 214,934 (185,725--239,535) \\
+	& 267,346 (240,224--297,124) & 218,750 (194,342--243,930) \\
+	\hline
+	\multirow{2}*{greedy-nn} & 87,649 (84,471--95,013) & 58,877 (56,304--63,304) \\
+	& 79,304 (77,448--82,669) & 54,405 (50,335--59,846) \\
+	\hline
+	\multirow{2}*{greedy-cycle} & 77,069 (75,666--80,321) & 55,845 (53,226--58,876) \\
+	& 70,685 (68,764--76,324) & 55,055 (50,409--60,077) \\
+	\hline
+	\hline
+
+	\multirow{2}*{2-regret} & 103,385 (86,224--119,577) & 66,161 (58,778--71,821) \\
+	& 97,807 (83,179--113,449) & 63,387 (53,396--69,441) \\
+	\hline
+	\multirow{2}*{wsc} & 87,553 (80,427--101,498) & 60,334 (54,306--66,962) \\
+	& 82,983 (73,310--95,733) & 58,478 (51,420--66,263) \\
+	\hline
+	\hline
+
+	\multirow{2}*{ls-greedy-random} & 77,819 (75,305--81,728) & 51,615 (48,989--54,563) \\
+	& 71,093 (68,171--76,696) & 48,712 (46,240--53,155) \\
+	\hline
+	\multirow{2}*{ls-greedy-preset} & 74,819 (74,690--74,888) & 53,080 (53,080--53,080) \\
+	& 67,955 (67,748--68,316) & 45,721 (44,698--46,494) \\
+	\hline
+	\multirow{2}*{ls-steepest-random} & 77,866 (75,315--81,017) & 51,371 (49,257--53,785) \\
+	& 71,322 (68,623--76,002) & 48,234 (45,351--51,534) \\
+	\hline
+	\multirow{2}*{ls-steepest-preset} & 74,837 (74,837--74,837) & 53,080 (53,080--53,080) \\
+	& 67,852 (67,852--67,852) & 45,556 (45,556--45,556) \\
+	\hline
+	\caption{Average, minimum and maximum scores of found solutions}
+\end{longtable}
+
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	 & \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	 & \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
+	\multirow{2}*{ls-greedy-random} & 35.826 (31.185--43.658) & 36.884 (31.790--52.520) \\
+	& 36.761 (31.362--43.052) & 38.939 (30.861--50.768) \\
+	\hline
+	\multirow{2}*{ls-greedy-preset} & 5.050 (3.089--11.703) & 2.471 (1.739--3.529) \\
+	& 4.435 (3.041--8.031) & 8.352 (5.892--11.703) \\
+	\hline
+	\multirow{2}*{ls-steepest-random} & 82.528 (70.451--117.119) & 82.132 (72.866--96.202) \\
+	& 84.666 (73.417--98.120) & 83.055 (68.014--94.368) \\
+	\hline
+	\multirow{2}*{ls-steepest-preset} & 7.415 (7.290--12.772) & 2.442 (2.429--2.567) \\
+	& 6.738 (6.681--7.263) & 24.005 (23.762--30.697) \\
+	\hline
+	\caption{Average, minimum, maximum running times per instance (ms)}
+\end{longtable}
 
 \section{Visualizations}
 
 \newcommand{\visualization}[3]{%
 \begin{figure}[H]%
-	\begin{adjustwidth}{-3em}{0}%
-		\includegraphics{results/best_#2_#1.pdf}%
+	\begin{adjustwidth}{0}{0}%
+		\includegraphics[width=\linewidth]{results/best_#2_#1.pdf}%
 	\end{adjustwidth}%
-	\vspace{-15mm}%
+	\vspace{-12mm}%
 	\caption{Best #2 solution to #1 (#3)}%
 \end{figure}%
 }
 
+\subsection{TSPA.csv}
+\visualization{TSPA}{ls-greedy-random}{75,305}
+\visualization{TSPA}{ls-greedy-preset}{74,690}
+\visualization{TSPA}{ls-steepest-random}{75,315}
+\visualization{TSPA}{ls-steepest-preset}{74,837}
+
+\subsection{TSPB.csv}
+\visualization{TSPB}{ls-greedy-random}{68,171}
+\visualization{TSPB}{ls-greedy-preset}{67,748}
+\visualization{TSPB}{ls-steepest-random}{68,623}
+\visualization{TSPB}{ls-steepest-preset}{67,852}
+
+\subsection{TSPC.csv}
+\visualization{TSPC}{ls-greedy-random}{48,989}
+\visualization{TSPC}{ls-greedy-preset}{53,080}
+\visualization{TSPC}{ls-steepest-random}{49,257}
+\visualization{TSPC}{ls-steepest-preset}{53,080}
+
+\subsection{TSPD.csv}
+\visualization{TSPD}{ls-greedy-random}{46,240}
+\visualization{TSPD}{ls-greedy-preset}{44,698}
+\visualization{TSPD}{ls-steepest-random}{45,351}
+\visualization{TSPD}{ls-steepest-preset}{45,556}
+
+\newpage
 \section{Source code}
 The source code for all the experiments and this report is hosted on GitHub: \\
 \url{https://github.com/RoyalDonkey/put-ec-tasks}
 
 \section{Conclusions}
+I'm generally pleased with the results -- local search methods managed to
+improve solutions in almost all cases and in some by a considerable margin.
+
+An interesting anomaly with \textbf{TSPC} happened; it appears that the preset
+solution I took from nearest neighbor run of the first report is, by some
+insane(?) happenstance, a local optimum. This has caused both greedy and
+steepest local searches to not be able to find a single improvement,
+understandably so. As a result, the random-initialized variants beat the
+greedy-initialized one, which in turn have equal average-min-max values.%
+\footnote{It was later brought to my attention that I probably misunderstood
+	the assignment a bit, and we were supposed to start local search 200 times
+	from graphs that were obtained from a greedy method being started from
+	different nodes. I instead read it as starting the \emph{local search} each
+	time from a different node, which doesn't make a lot of sense and I chose
+	to ignore this requirement entirely. I always start all preset local
+	searches from the same solutions. My apologies, if I wasn't already past
+	the schedule I would correct this. On the flip side, this gave me the
+opportunity to notice and discuss the local optimum situation, which is pretty
+interesting.}
+
+\vspace{4mm}
+\noindent
+Similarly to report 2, I ended up implementing a data structure for this
+assignment, which I ended up not using at all. I really need to stop doing
+that.
+
+I thought a min-heap would be handy for steepest neighborhood scan, because I
+figured that it's a huge waste to rescan everything every iteration, when we're
+only changing tiny parts of the graph at a time. This idea is good, but then I
+forgot about it, ended up doing it the naïve way, finished the
+report\footnote{FYI, the running time for all the experiments in this report
+was about 1:53 minutes.}, and once I was past the finish line, I did not feel
+like coming back to optimize it anymore.
+
 \end{document}
