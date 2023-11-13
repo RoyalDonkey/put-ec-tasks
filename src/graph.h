@@ -28,6 +28,11 @@ struct tsp_dist_matrix {
 	size_t size;  /* Number of nodes */
 };
 
+struct tsp_cand_matrix {
+	bool *cand;
+	size_t size;  /* Number of nodes */
+};
+
 struct tsp_graph {
 	/* The structure I use for nodes is called a stack,
 	 * but it has the properties of a normal array. */
@@ -80,5 +85,14 @@ void tsp_nodes_swap_edges(struct sp_stack *nodes, size_t idx1, size_t idx2);
 long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_idx, size_t active_idx);
 long tsp_nodes_evaluate_swap_nodes(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2);
 long tsp_nodes_evaluate_swap_edges(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2);
+
+struct tsp_cand_matrix *tsp_graph_compute_candidates(const struct tsp_graph *graph, size_t n);
+void tsp_cand_matrix_destroy(struct tsp_cand_matrix *cand_matrix);
+bool tsp_graph_inter_swap_adds_candidate(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix, size_t vacant_idx, size_t active_idx);
+bool tsp_nodes_swap_nodes_adds_candidate(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix, size_t idx1, size_t idx2);
+bool tsp_nodes_swap_edges_adds_candidate(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix, size_t idx1, size_t idx2);
+bool *tsp_graph_cache_inter_swap_adds_candidates(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix);
+bool *tsp_nodes_cache_swap_nodes_adds_candidates(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix);
+bool *tsp_nodes_cache_swap_edges_adds_candidates(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix);
 
 #endif /* TSP_GRAPH_H */

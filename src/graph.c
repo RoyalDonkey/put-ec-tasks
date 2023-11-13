@@ -1,6 +1,7 @@
 #include "graph.h"
 #include "helpers.h"
 #include "../libstaple/src/staple.h"
+#include "heap.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,6 +9,13 @@
 #include <float.h>
 #include <stdbool.h>
 #include <string.h>
+
+
+/* Auxiliary structs */
+struct id_val_pair {
+	size_t id;
+	size_t val;
+};
 
 
 /* Forward declarations */
@@ -803,4 +811,181 @@ long tsp_nodes_evaluate_swap_edges(const struct sp_stack *nodes, const struct ts
 		- DIST(n2, n2_next, matrix)
 		+ DIST(n1, n2_next.id != n1.id ? n2_next : n2, matrix)
 		+ DIST(n2, n1_prev.id != n2.id ? n1_prev : n1, matrix);
+}
+
+bool id_val_pair_min_val_cmp(const void *a, const void *b)
+{
+	const struct id_val_pair *const p1 = a;
+	const struct id_val_pair *const p2 = b;
+	return p1->val > p2->val;
+}
+
+/* Returns a candidate matrix -- like dist_matrix, but true=candidate, false=non_candidate */
+struct tsp_cand_matrix *tsp_graph_compute_candidates(const struct tsp_graph *graph, size_t n)
+{
+	assert(n > 0);
+	const struct sp_stack *const vacant = graph->nodes_vacant;
+	const struct sp_stack *const active = graph->nodes_active;
+	const struct tsp_dist_matrix *const matrix = &graph->dist_matrix;
+	const size_t n_nodes = vacant->size + active->size;
+	assert(n_nodes == matrix->size);
+	struct tsp_cand_matrix *const ret = malloc_or_die(sizeof(struct tsp_cand_matrix));
+	ret->cand = calloc_or_die(n_nodes * n_nodes * sizeof(bool));
+	ret->size = n_nodes;
+
+	/* Create a helper stack of all nodes */
+	if (n >= n_nodes) {
+		/* Every node is a candidate */
+		memset(ret->cand, 0xff, n_nodes * n_nodes * sizeof(bool));
+		return ret;
+	}
+	struct sp_stack *const nodes = sp_stack_create(sizeof(struct tsp_node), n_nodes);
+	sp_stack_copy(nodes, vacant, NULL);
+	for (size_t i = 0; i < active->size; i++) {
+		sp_stack_push(nodes, sp_stack_get(active, i));
+	}
+	assert(nodes->size == n_nodes);
+
+	struct tsp_heap *const heap = tsp_heap_create(sizeof(struct id_val_pair), n, id_val_pair_min_val_cmp);
+
+	/* Consider each node in the graph */
+	for (size_t i = 0; i < n_nodes; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
+
+		/* Insert all other nodes into a distance-based min-heap */
+		tsp_heap_clear(heap);
+		for (size_t j = 0; j < n_nodes; j++) {
+			if (j == i) {
+				continue;
+			}
+			const struct tsp_node node_neighbor = *(struct tsp_node*)sp_stack_get(nodes, j);
+			const struct id_val_pair p = {
+				node_neighbor.id,
+				DIST(node, node_neighbor, matrix),
+			};
+			tsp_heap_push(heap, &p);
+		}
+
+		/* Mark `n` best nodes as candidates */
+		for (size_t k = 0; k < n; k++) {
+			const struct id_val_pair candidate = *(struct id_val_pair*)tsp_heap_get(heap);
+			tsp_heap_pop(heap);
+			assert(matrix->dist[node.id * n_nodes + candidate.id] == candidate.val);
+			assert(matrix->dist[candidate.id * n_nodes + node.id] == candidate.val);
+			ret->cand[node.id * n_nodes + candidate.id] = true;
+			ret->cand[candidate.id * n_nodes + node.id] = true;
+		}
+	}
+
+	tsp_heap_destroy(heap);
+	sp_stack_destroy(nodes, NULL);
+	return ret;
+}
+
+void tsp_cand_matrix_destroy(struct tsp_cand_matrix *cand_matrix)
+{
+	free(cand_matrix->cand);
+	free(cand_matrix);
+}
+
+bool tsp_graph_inter_swap_adds_candidate(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix, size_t vacant_idx, size_t active_idx)
+{
+	const struct sp_stack *const vacant = graph->nodes_vacant;
+	const struct sp_stack *const active = graph->nodes_active;
+
+	const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(vacant, vacant_idx);
+	const size_t n2_prev_idx = (active_idx + active->size - 1) % active->size;
+	const size_t n2_next_idx = (active_idx + 1) % active->size;
+	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(active, n2_prev_idx);
+	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(active, n2_next_idx);
+
+	if (
+		cand_matrix->cand[n1.id * cand_matrix->size + n2_prev.id] ||
+		cand_matrix->cand[n1.id * cand_matrix->size + n2_next.id]
+	) {
+		return true;
+	}
+	return false;
+}
+
+bool tsp_nodes_swap_nodes_adds_candidate(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix, size_t idx1, size_t idx2)
+{
+	const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(nodes, idx1);
+	const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(nodes, idx2);
+	const size_t n1_prev_idx = (idx1 + nodes->size - 1) % nodes->size;
+	const size_t n1_next_idx = (idx1 + 1) % nodes->size;
+	const size_t n2_prev_idx = (idx2 + nodes->size - 1) % nodes->size;
+	const size_t n2_next_idx = (idx2 + 1) % nodes->size;
+	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(nodes, n1_prev_idx);
+	const struct tsp_node n1_next = *(struct tsp_node*)sp_stack_get(nodes, n1_next_idx);
+	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(nodes, n2_prev_idx);
+	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(nodes, n2_next_idx);
+
+	if (
+		cand_matrix->cand[n2.id * cand_matrix->size + (n1_prev.id != n2.id ? n1_prev.id : n1.id)] ||
+		cand_matrix->cand[n2.id * cand_matrix->size + (n1_next.id != n2.id ? n1_next.id : n1.id)] ||
+		cand_matrix->cand[n1.id * cand_matrix->size + (n2_prev.id != n1.id ? n2_prev.id : n2.id)] ||
+		cand_matrix->cand[n1.id * cand_matrix->size + (n2_next.id != n1.id ? n2_next.id : n2.id)]
+	) {
+		return true;
+	}
+	return false;
+}
+
+bool tsp_nodes_swap_edges_adds_candidate(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix, size_t idx1, size_t idx2)
+{
+	/* Make sure idx1 < idx2 */
+	if (idx1 > idx2) {
+		const size_t tmp = idx1;
+		idx1 = idx2;
+		idx2 = tmp;
+	}
+
+	const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(nodes, idx1);
+	const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(nodes, idx2);
+	const size_t n1_prev_idx = (idx1 + nodes->size - 1) % nodes->size;
+	const size_t n2_next_idx = (idx2 + 1) % nodes->size;
+	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(nodes, n1_prev_idx);
+	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(nodes, n2_next_idx);
+
+	if (
+		cand_matrix->cand[n1.id * cand_matrix->size + n2_next.id] ||
+		cand_matrix->cand[n2.id * cand_matrix->size + n1_prev.id]
+	) {
+		return true;
+	}
+	return false;
+}
+
+bool *tsp_graph_cache_inter_swap_adds_candidates(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix)
+{
+	bool *const ret = malloc_or_die(cand_matrix->size * cand_matrix->size * sizeof(bool));
+	for (size_t i = 0; i < graph->nodes_active->size; i++) {
+		for (size_t j = 0; j < graph->nodes_vacant->size; j++) {
+			ret[i * cand_matrix->size + j] = tsp_graph_inter_swap_adds_candidate(graph, cand_matrix, i, j);
+		}
+	}
+	return ret;
+}
+
+bool *tsp_nodes_cache_swap_nodes_adds_candidates(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix)
+{
+	bool *const ret = malloc_or_die(cand_matrix->size * cand_matrix->size * sizeof(bool));
+	for (size_t i = 0; i < nodes->size; i++) {
+		for (size_t j = 0; j < nodes->size; j++) {
+			ret[i * cand_matrix->size + j] = tsp_nodes_swap_nodes_adds_candidate(nodes, cand_matrix, i, j);
+		}
+	}
+	return ret;
+}
+
+bool *tsp_nodes_cache_swap_edges_adds_candidates(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix)
+{
+	bool *const ret = malloc_or_die(cand_matrix->size * cand_matrix->size * sizeof(bool));
+	for (size_t i = 0; i < nodes->size; i++) {
+		for (size_t j = 0; j < nodes->size; j++) {
+			ret[i * cand_matrix->size + j] = tsp_nodes_swap_edges_adds_candidate(nodes, cand_matrix, i, j);
+		}
+	}
+	return ret;
 }

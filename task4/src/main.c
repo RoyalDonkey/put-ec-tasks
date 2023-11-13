@@ -6,6 +6,8 @@
 #include <time.h>
 #include <float.h>
 
+#define N_CANDIDATES 10
+
 /* Typedefs */
 typedef void (*lsearch_func_t)(struct tsp_graph *graph);
 
@@ -27,7 +29,7 @@ static const char *nodes_files[] = {
 };
 static struct sp_stack *nodes[ARRLEN(nodes_files)];
 
-void lsearch_steepest(struct tsp_graph *graph);
+void lsearch_candidates_steepest(struct tsp_graph *graph);
 
 struct sp_stack *init_moves(size_t n_nodes)
 {
@@ -57,10 +59,16 @@ struct sp_stack *init_moves(size_t n_nodes)
 	return moves;
 }
 
-void lsearch_steepest(struct tsp_graph *graph)
+void lsearch_candidates_steepest(struct tsp_graph *graph)
 {
 	struct sp_stack *const active = graph->nodes_active;
 	struct sp_stack *const vacant = graph->nodes_vacant;
+	const size_t n_nodes = graph->dist_matrix.size;
+	struct tsp_cand_matrix *const cand_matrix = tsp_graph_compute_candidates(graph, N_CANDIDATES);
+	bool *const inter_swap_adds_candidate = tsp_graph_cache_inter_swap_adds_candidates(graph, cand_matrix);
+	bool *const swap_nodes_adds_candidate = tsp_nodes_cache_swap_nodes_adds_candidates(active, cand_matrix);
+	bool *const swap_edges_adds_candidate = tsp_nodes_cache_swap_edges_adds_candidates(active, cand_matrix);
+	tsp_cand_matrix_destroy(cand_matrix);
 
 	bool did_improve = true;
 	while (did_improve) {
@@ -70,30 +78,35 @@ void lsearch_steepest(struct tsp_graph *graph)
 
 		for (size_t i = 0; i < active->size; i++) {
 			for (size_t j = i; j < active->size; j++) {
-				long delta;
-
-				delta = tsp_nodes_evaluate_swap_nodes(active, &graph->dist_matrix, i, j);
-				if (delta < min_delta) {
-					min_delta = delta;
-					best_move.indices.src = i;
-					best_move.indices.dest = j;
-					best_move.type = MOVE_TYPE_NODES;
-					did_improve = true;
+				if (swap_nodes_adds_candidate[i * n_nodes + j]) {
+					const long delta = tsp_nodes_evaluate_swap_nodes(active, &graph->dist_matrix, i, j);
+					if (delta < min_delta) {
+						min_delta = delta;
+						best_move.indices.src = i;
+						best_move.indices.dest = j;
+						best_move.type = MOVE_TYPE_NODES;
+						did_improve = true;
+					}
 				}
 
-				delta = tsp_nodes_evaluate_swap_edges(active, &graph->dist_matrix, i, j);
-				if (delta < min_delta) {
-					min_delta = delta;
-					best_move.indices.src = i;
-					best_move.indices.dest = j;
-					best_move.type = MOVE_TYPE_EDGES;
-					did_improve = true;
+				if (swap_edges_adds_candidate[i * n_nodes + j]) {
+					const long delta = tsp_nodes_evaluate_swap_edges(active, &graph->dist_matrix, i, j);
+					if (delta < min_delta) {
+						min_delta = delta;
+						best_move.indices.src = i;
+						best_move.indices.dest = j;
+						best_move.type = MOVE_TYPE_EDGES;
+						did_improve = true;
+					}
 				}
 			}
 		}
 
 		for (size_t i = 0; i < active->size; i++) {
 			for (size_t j = 0; j < vacant->size; j++) {
+				if (!inter_swap_adds_candidate[i * n_nodes + j]) {
+					continue;
+				}
 				const long delta = tsp_graph_evaluate_inter_swap(graph, i, j);
 				if (delta < min_delta) {
 					min_delta = delta;
@@ -121,6 +134,9 @@ void lsearch_steepest(struct tsp_graph *graph)
 			}
 		}
 	}
+	free(inter_swap_adds_candidate);
+	free(swap_nodes_adds_candidate);
+	free(swap_edges_adds_candidate);
 }
 
 void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
@@ -211,8 +227,7 @@ int main(void)
 		nodes[i] = tsp_nodes_read(nodes_files[i]);
 	}
 
-	/* run_lsearch_algorithm("ls-steepest-random", lsearch_steepest); */
-	/* run_lsearch_algorithm("ls-steepest-preset", lsearch_steepest); */
+	run_lsearch_algorithm("lsc-steepest-random", lsearch_candidates_steepest);
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		sp_stack_destroy(nodes[i], NULL);
