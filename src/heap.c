@@ -48,12 +48,14 @@ void tsp_heap_push(struct tsp_heap *heap, const void *elem)
 void *tsp_heap_get(const struct tsp_heap *heap)
 {
 	assert(heap != NULL);
+	assert(heap->size != 0);
 	return heap->data;
 }
 
 void tsp_heap_pop(struct tsp_heap *heap)
 {
 	assert(heap != NULL);
+	assert(heap->size != 0);
 	void *const src = (char*)heap->data + ((heap->size - 1) * heap->elem_size);
 	memcpy(heap->data, src, heap->elem_size);
 	--heap->size;
