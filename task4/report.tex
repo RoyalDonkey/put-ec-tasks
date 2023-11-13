@@ -74,12 +74,53 @@ The distance matrix should be calculated just after reading an instance and
 then only the distance matrix (no nodes coordinates) should be accessed by
 optimization methods to allow instances defined only by distance matrices.
 
-\section{Corrections from previous reports}
-
 \section{Pseudocode}
 
 \section{Results}
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	 & \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	 & \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
 
+	\multirow{2}*{ls-steepest-random} & 77,866 (75,315--81,017) & 51,371 (49,257--53,785) \\
+	& 71,322 (68,623--76,002) & 48,234 (45,351--51,534) \\
+	\hline
+
+	\multirow{2}*{lsc-steepest-random} & 89,197 (83,559--99,633) & 62,674 (56,990--74,215) \\
+	 & 84,469 (74,393--96,069) & 60,289 (53,205--67,824) \\
+	\hline
+
+	\caption{Average, minimum and maximum scores of found solutions}
+\end{longtable}
+
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	 & \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	 & \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
+	\multirow{2}*{ls-steepest-random} & 82.528 (70.451--117.119) & 82.132 (72.866--96.202) \\
+	& 84.666 (73.417--98.120) & 83.055 (68.014--94.368) \\
+	\hline
+	\multirow{2}*{lsc-steepest-preset} & 19.134 (14.749--25.742) & 18.321 (13.988--24.015) \\
+	& 18.863 (14.981--25.721) & 17.899 (14.340--22.888) \\
+	\hline
+	\caption{Average, minimum, maximum running times per instance (ms)}
+\end{longtable}
+
+\newpage
 \section{Visualizations}
 
 \newcommand{\visualization}[3]{%
@@ -93,12 +134,20 @@ optimization methods to allow instances defined only by distance matrices.
 }
 
 \subsection{TSPA.csv}
+\visualization{TSPA}{ls-steepest-random}{75,315}
+\visualization{TSPA}{lsc-steepest-random}{83,559}
 
 \subsection{TSPB.csv}
+\visualization{TSPB}{ls-steepest-random}{68,623}
+\visualization{TSPB}{lsc-steepest-random}{74,393}
 
 \subsection{TSPC.csv}
+\visualization{TSPC}{ls-steepest-random}{49,257}
+\visualization{TSPC}{lsc-steepest-random}{56,990}
 
 \subsection{TSPD.csv}
+\visualization{TSPD}{ls-steepest-random}{45,351}
+\visualization{TSPD}{lsc-steepest-random}{53,205}
 
 \section{Source code}
 The source code for all the experiments and this report is hosted on GitHub: \\
