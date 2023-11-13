@@ -25,6 +25,17 @@ void *malloc_or_die(size_t n_bytes)
 	return ret;
 }
 
+void *calloc_or_die(size_t n_bytes)
+{
+	void *ret;
+	ret = calloc(n_bytes, 1);
+	if (ret == NULL) {
+		error(("calloc failed -- out of memory!"));
+		exit(EXIT_FAILURE);
+	}
+	return ret;
+}
+
 double euclidean_dist(double x1, double y1, double x2, double y2)
 {
 	const double dx = x1 - x2;
