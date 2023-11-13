@@ -65,6 +65,24 @@ void tsp_dist_matrix_init(struct tsp_dist_matrix *matrix, const struct sp_stack 
 	matrix->size = nodes->size;
 }
 
+void tsp_dist_matrix_print(struct tsp_dist_matrix matrix)
+{
+	printf("tsp_dist_matrix_print()\n");
+	printf("       ");
+	for (size_t j = 0; j < matrix.size; j++) {
+		printf("[%3zu]  ", j);
+	}
+	putchar('\n');
+	for (size_t i = 0; i < matrix.size; i++) {
+		printf("[%3zu]  ", i);
+		for (size_t j = 0; j < matrix.size; j++) {
+			const unsigned dist = matrix.dist[i * matrix.size + j];
+			printf("%5u  ", dist);
+		}
+		putchar('\n');
+	}
+}
+
 struct tsp_graph *tsp_graph_create(const struct sp_stack *nodes)
 {
 	struct tsp_graph *const graph = tsp_graph_empty();
