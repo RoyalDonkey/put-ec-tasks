@@ -17,6 +17,7 @@ struct tsp_heap *tsp_heap_create(size_t elem_size, size_t capacity, bool (*cmp)(
 void tsp_heap_push(struct tsp_heap *heap, const void *elem);
 void *tsp_heap_get(const struct tsp_heap *heap);
 void tsp_heap_pop(struct tsp_heap *heap);
+void tsp_heap_clear(struct tsp_heap *heap);
 void tsp_heap_print(const struct tsp_heap *heap, void (*func)(size_t, const void*));
 void tsp_heap_destroy(struct tsp_heap *heap);
 

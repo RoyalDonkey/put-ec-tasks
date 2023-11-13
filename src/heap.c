@@ -62,6 +62,11 @@ void tsp_heap_pop(struct tsp_heap *heap)
 	heapify(heap);
 }
 
+void tsp_heap_clear(struct tsp_heap *heap)
+{
+	heap->size = 0;
+}
+
 void tsp_heap_print(const struct tsp_heap *heap, void (*func)(size_t, const void*))
 {
 	assert(heap != NULL);
