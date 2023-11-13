@@ -40,7 +40,7 @@ clean:
 	$(RM) -- $(LIBTSP) $(OBJS)
 	@for t in $(TASKS); do $(MAKE) -C "$$t" clean; done
 
-debug: CFLAGS += -g -Og
+debug: CFLAGS += -g -Og -ftrapv
 debug: clean all
 
 profile: CFLAGS += -pg

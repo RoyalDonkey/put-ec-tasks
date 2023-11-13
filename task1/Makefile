@@ -30,7 +30,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 clean:
 	$(RM) -- $(TARGET) $(OBJS)
 
-debug: CFLAGS += -g -Og
+debug: CFLAGS += -g -Og -ftrapv
 debug: clean all
 
 fast: CFLAGS += -Wno-error -DNDEBUG
