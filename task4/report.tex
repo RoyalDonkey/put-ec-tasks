@@ -49,7 +49,7 @@
 
 \title{Evolutionary Computation Lab IV}
 \author{Piotr Kaszubski 148283}
-\date{}
+\date{Monday, November 13, 2023}
 
 \begin{document}
 \maketitle
@@ -75,7 +75,78 @@ then only the distance matrix (no nodes coordinates) should be accessed by
 optimization methods to allow instances defined only by distance matrices.
 
 \section{Pseudocode}
+The method is mostly the same as in the previous report. However, there is an
+extra preprocessing step and a slight alteration to the runtime logic.
 
+\subsection{Before linear search}
+\begin{enumerate}
+	\item Initialize an \verb`NxN` boolean matrix \verb`M` to \verb`false`
+		values, where \verb`N` is the number of nodes in the graph \verb`G`.
+	\item For each node \verb`n` in \verb`G`, do:
+		\begin{enumerate}
+			\item Find 10 nodes with the smallest distance to \verb`n`
+				(excluding \verb`n`), and mark them as \verb`true` in \verb`M`.
+		\end{enumerate}
+\end{enumerate}
+
+Once we have the boolean matrix of 10 closest nodes to each node, we use it to
+cache all acceptable moves (of which there are 3 types: inter-route node swap,
+intra-route node swap, intra-route edge swap).
+
+\noindent
+Inside the linear search algorithm, we modify:
+\begin{enumerate}
+	\item For index \verb`i` in \verb`size(G)`, do:
+		\begin{enumerate}
+			\item For index \verb`j` in \verb`size(G)`, do:
+				\begin{enumerate}
+					\item Evaluate intra-route node swap between \verb`i`th and
+						\verb`j`th node.
+					\item Evaluate intra-route edge swap between \verb`i`th and
+						\verb`j`th node.
+				\end{enumerate}
+		\end{enumerate}
+	\item For index \verb`i` in \verb`size(G)`, do:
+		\begin{enumerate}
+			\item For index \verb`j` in \verb`size(G')` (where \verb`G'` is the set of nodes outside of \verb`G`), do:
+				\begin{enumerate}
+					\item Evaluate inter-route node swap between \verb`i`th
+						node in \verb`G` and \verb`j`th node in \verb`G'`.
+				\end{enumerate}
+		\end{enumerate}
+\end{enumerate}
+\ldots to instead be:
+\begin{enumerate}
+	\item For index \verb`i` in \verb`size(G)`, do:
+		\begin{enumerate}
+			\item For index \verb`j` in \verb`size(G)`, do:
+				\begin{enumerate}
+					\item \textbf{If intra-route node swap for} \verb`(i, j)` \textbf{is cached as acceptable, do}:
+						\begin{enumerate}
+							\item Evaluate intra-route node swap between \verb`i`th and
+								\verb`j`th node.
+						\end{enumerate}
+					\item \textbf{If intra-route edge swap for} \verb`(i, j)` \textbf{is cached as acceptable, do}:
+						\begin{enumerate}
+							\item Evaluate intra-route edge swap between \verb`i`th and
+								\verb`j`th node.
+						\end{enumerate}
+				\end{enumerate}
+		\end{enumerate}
+	\item For index \verb`i` in \verb`size(G)`, do:
+		\begin{enumerate}
+			\item For index \verb`j` in \verb`size(G')` (where \verb`G'` is the set of nodes outside of \verb`G`), do:
+				\begin{enumerate}
+					\item \textbf{If inter-route node swap for} \verb`(i, j)` \textbf{is cached as acceptable, do}:
+						\begin{enumerate}
+							\item Evaluate inter-route node swap between \verb`i`th
+								node in \verb`G` and \verb`j`th node in \verb`G'`.
+						\end{enumerate}
+				\end{enumerate}
+		\end{enumerate}
+\end{enumerate}
+
+\newpage
 \section{Results}
 \begin{longtable}[c]{|c|cc|}
 	\hline
@@ -154,5 +225,13 @@ The source code for all the experiments and this report is hosted on GitHub: \\
 \url{https://github.com/RoyalDonkey/put-ec-tasks}
 
 \section{Conclusions}
+Candidate moves are a nice way to introduce a parameterized trade-off between
+the accuracy of the search and the running time. I tested the experiments with
+\verb`n=15` as well, and it extended the time from around 15 seconds to 22
+seconds, but managed to find solutions better by about 3,000.
 
+It is visible from the plots that the candidate method settled for more
+high-cost nodes. I wonder if the tendency to pick longer edges is
+proportionally the same (it is difficult to tell from the plots, because edge
+lengths are not as easy to compare).
 \end{document}
