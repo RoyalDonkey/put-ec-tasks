@@ -86,6 +86,7 @@ long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_
 long tsp_nodes_evaluate_swap_nodes(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2);
 long tsp_nodes_evaluate_swap_edges(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2);
 
+struct tsp_cand_matrix *tsp_cand_matrix_create(size_t size);
 struct tsp_cand_matrix *tsp_graph_compute_candidates(const struct tsp_graph *graph, size_t n);
 void tsp_cand_matrix_destroy(struct tsp_cand_matrix *cand_matrix);
 bool tsp_graph_inter_swap_adds_candidate(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix, size_t vacant_idx, size_t active_idx);

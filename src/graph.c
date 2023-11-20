@@ -829,8 +829,7 @@ struct tsp_cand_matrix *tsp_graph_compute_candidates(const struct tsp_graph *gra
 	const struct tsp_dist_matrix *const matrix = &graph->dist_matrix;
 	const size_t n_nodes = vacant->size + active->size;
 	assert(n_nodes == matrix->size);
-	struct tsp_cand_matrix *const ret = malloc_or_die(sizeof(struct tsp_cand_matrix));
-	ret->cand = calloc_or_die(n_nodes * n_nodes * sizeof(bool));
+	struct tsp_cand_matrix *const ret = tsp_cand_matrix_create(n_nodes);
 	ret->size = n_nodes;
 
 	/* Create a helper stack of all nodes */
@@ -879,6 +878,14 @@ struct tsp_cand_matrix *tsp_graph_compute_candidates(const struct tsp_graph *gra
 
 	tsp_heap_destroy(heap);
 	sp_stack_destroy(nodes, NULL);
+	return ret;
+}
+
+struct tsp_cand_matrix *tsp_cand_matrix_create(size_t size)
+{
+	struct tsp_cand_matrix *const ret = malloc_or_die(sizeof(struct tsp_cand_matrix));
+	ret->cand = calloc_or_die(size * size * sizeof(bool));
+	ret->size = size;
 	return ret;
 }
 
