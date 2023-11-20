@@ -29,7 +29,7 @@ static const char *nodes_files[] = {
 };
 static struct sp_stack *nodes[ARRLEN(nodes_files)];
 
-void lsearch_candidates_steepest(struct tsp_graph *graph);
+void lsearch_candidates_delta_steepest(struct tsp_graph *graph);
 
 struct sp_stack *init_moves(size_t n_nodes)
 {
@@ -59,7 +59,7 @@ struct sp_stack *init_moves(size_t n_nodes)
 	return moves;
 }
 
-void lsearch_candidates_steepest(struct tsp_graph *graph)
+void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 {
 	struct sp_stack *const active = graph->nodes_active;
 	struct sp_stack *const vacant = graph->nodes_vacant;
@@ -227,7 +227,7 @@ int main(void)
 		nodes[i] = tsp_nodes_read(nodes_files[i]);
 	}
 
-	run_lsearch_algorithm("lsc-steepest-random", lsearch_candidates_steepest);
+	run_lsearch_algorithm("lscd-steepest-random", lsearch_candidates_delta_steepest);
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		sp_stack_destroy(nodes[i], NULL);
