@@ -996,3 +996,51 @@ bool *tsp_nodes_cache_swap_edges_adds_candidates(const struct sp_stack *nodes, c
 	}
 	return ret;
 }
+
+struct tsp_delta_cache *tsp_delta_cache_create(size_t size)
+{
+	struct tsp_delta_cache *const ret = malloc_or_die(sizeof(struct tsp_delta_cache));
+	ret->inter_swap = calloc_or_die(size * size * sizeof(long));
+	ret->swap_nodes = calloc_or_die(size * size * sizeof(long));
+	ret->swap_edges = calloc_or_die(size * size * sizeof(long));
+	ret->size = size;
+	return ret;
+}
+
+void tsp_delta_cache_destroy(struct tsp_delta_cache *delta_matrix)
+{
+	free(delta_matrix->inter_swap);
+	free(delta_matrix->swap_nodes);
+	free(delta_matrix->swap_edges);
+	free(delta_matrix);
+}
+
+long tsp_graph_evaluate_inter_swap_with_delta_cache(const struct tsp_graph *graph, size_t vacant_idx, size_t active_idx, struct tsp_delta_cache *cache)
+{
+	if (cache->inter_swap[active_idx * cache->size + vacant_idx] != 0) {
+		return cache->inter_swap[active_idx * cache->size + vacant_idx];
+	}
+	const long delta = tsp_graph_evaluate_inter_swap(graph, vacant_idx, active_idx);
+	/* TODO */
+	return delta;
+}
+
+long tsp_nodes_evaluate_swap_nodes_with_delta_cache(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2, struct tsp_delta_cache *cache)
+{
+	if (cache->swap_nodes[idx1 * cache->size + idx2] != 0) {
+		return cache->inter_swap[idx1 * cache->size + idx2];
+	}
+	const long delta = tsp_nodes_evaluate_swap_nodes(nodes, matrix, idx1, idx2);
+	/* TODO */
+	return delta;
+}
+
+long tsp_nodes_evaluate_swap_edges_with_delta_cache(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2, struct tsp_delta_cache *cache)
+{
+	if (cache->swap_nodes[idx1 * cache->size + idx2] != 0) {
+		return cache->inter_swap[idx1 * cache->size + idx2];
+	}
+	const long delta = tsp_nodes_evaluate_swap_edges(nodes, matrix, idx1, idx2);
+	/* TODO */
+	return delta;
+}

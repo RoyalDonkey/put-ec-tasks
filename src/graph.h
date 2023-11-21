@@ -33,6 +33,13 @@ struct tsp_cand_matrix {
 	size_t size;  /* Number of nodes */
 };
 
+struct tsp_delta_cache {
+	long *inter_swap;
+	long *swap_nodes;
+	long *swap_edges;
+	size_t size;  /* Number of nodes */
+};
+
 struct tsp_graph {
 	/* The structure I use for nodes is called a stack,
 	 * but it has the properties of a normal array. */
@@ -95,5 +102,11 @@ bool tsp_nodes_swap_edges_adds_candidate(const struct sp_stack *nodes, const str
 bool *tsp_graph_cache_inter_swap_adds_candidates(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix);
 bool *tsp_nodes_cache_swap_nodes_adds_candidates(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix);
 bool *tsp_nodes_cache_swap_edges_adds_candidates(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix);
+
+struct tsp_delta_cache *tsp_delta_cache_create(size_t size);
+void tsp_delta_cache_destroy(struct tsp_delta_cache *delta_matrix);
+long tsp_graph_evaluate_inter_swap_with_delta_cache(const struct tsp_graph *graph, size_t vacant_idx, size_t active_idx, struct tsp_delta_cache *cache);
+long tsp_nodes_evaluate_swap_nodes_with_delta_cache(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
+long tsp_nodes_evaluate_swap_edges_with_delta_cache(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
 
 #endif /* TSP_GRAPH_H */

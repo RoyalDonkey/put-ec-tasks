@@ -69,6 +69,7 @@ void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 	bool *const swap_nodes_adds_candidate = tsp_nodes_cache_swap_nodes_adds_candidates(active, cand_matrix);
 	bool *const swap_edges_adds_candidate = tsp_nodes_cache_swap_edges_adds_candidates(active, cand_matrix);
 	tsp_cand_matrix_destroy(cand_matrix);
+	struct tsp_delta_cache *const delta_cache = tsp_delta_cache_create(n_nodes);
 
 	bool did_improve = true;
 	while (did_improve) {
@@ -79,7 +80,7 @@ void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 		for (size_t i = 0; i < active->size; i++) {
 			for (size_t j = i; j < active->size; j++) {
 				if (swap_nodes_adds_candidate[i * n_nodes + j]) {
-					const long delta = tsp_nodes_evaluate_swap_nodes(active, &graph->dist_matrix, i, j);
+					const long delta = tsp_nodes_evaluate_swap_nodes_with_delta_cache(active, &graph->dist_matrix, i, j, delta_cache);
 					if (delta < min_delta) {
 						min_delta = delta;
 						best_move.indices.src = i;
@@ -90,7 +91,7 @@ void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 				}
 
 				if (swap_edges_adds_candidate[i * n_nodes + j]) {
-					const long delta = tsp_nodes_evaluate_swap_edges(active, &graph->dist_matrix, i, j);
+					const long delta = tsp_nodes_evaluate_swap_edges_with_delta_cache(active, &graph->dist_matrix, i, j, delta_cache);
 					if (delta < min_delta) {
 						min_delta = delta;
 						best_move.indices.src = i;
@@ -107,7 +108,7 @@ void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 				if (!inter_swap_adds_candidate[i * n_nodes + j]) {
 					continue;
 				}
-				const long delta = tsp_graph_evaluate_inter_swap(graph, i, j);
+				const long delta = tsp_graph_evaluate_inter_swap_with_delta_cache(graph, i, j, delta_cache);
 				if (delta < min_delta) {
 					min_delta = delta;
 					best_move.indices.src = i;
@@ -134,6 +135,7 @@ void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 			}
 		}
 	}
+	tsp_delta_cache_destroy(delta_cache);
 	free(inter_swap_adds_candidate);
 	free(swap_nodes_adds_candidate);
 	free(swap_edges_adds_candidate);
