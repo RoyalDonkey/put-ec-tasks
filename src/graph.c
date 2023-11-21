@@ -750,6 +750,10 @@ void tsp_nodes_swap_edges(struct sp_stack *nodes, size_t idx1, size_t idx2)
 
 long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_idx, size_t active_idx)
 {
+	#ifdef TSP_TEST_EVAL
+	const unsigned long score_before = tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix);
+	#endif /* TSP_TEST_EVAL */
+
 	const struct sp_stack *const vacant = graph->nodes_vacant;
 	const struct sp_stack *const active = graph->nodes_active;
 
@@ -759,17 +763,35 @@ long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_
 	const size_t n2_next_idx = (active_idx + 1) % active->size;
 	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(active, n2_prev_idx);
 	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(active, n2_next_idx);
-	return
+	const long delta =
 		- DIST(n2, n2_prev, &graph->dist_matrix)
 		- DIST(n2, n2_next, &graph->dist_matrix)
 		- n2.cost
 		+ DIST(n1, n2_prev, &graph->dist_matrix)
 		+ DIST(n1, n2_next, &graph->dist_matrix)
 		+ n1.cost;
+
+	#ifdef TSP_TEST_EVAL
+	struct tsp_graph *const debug_graph = tsp_graph_empty();
+	tsp_graph_copy(debug_graph, graph);
+	tsp_graph_inter_swap(debug_graph, vacant_idx, active_idx);
+	const unsigned long score_after = tsp_nodes_evaluate(debug_graph->nodes_active, &debug_graph->dist_matrix);
+	const long target_delta = score_after - score_before;
+	if (delta != target_delta) {
+		error(("incorrect delta: got %ld, expected %ld", delta, target_delta));
+	}
+	tsp_graph_destroy(debug_graph);
+	#endif /* TSP_TEST_EVAL */
+
+	return delta;
 }
 
 long tsp_nodes_evaluate_swap_nodes(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2)
 {
+	#ifdef TSP_TEST_EVAL
+	const unsigned long score_before = tsp_nodes_evaluate(nodes, matrix);
+	#endif /* TSP_TEST_EVAL */
+
 	const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(nodes, idx1);
 	const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(nodes, idx2);
 	const size_t n1_prev_idx = (idx1 + nodes->size - 1) % nodes->size;
@@ -780,7 +802,7 @@ long tsp_nodes_evaluate_swap_nodes(const struct sp_stack *nodes, const struct ts
 	const struct tsp_node n1_next = *(struct tsp_node*)sp_stack_get(nodes, n1_next_idx);
 	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(nodes, n2_prev_idx);
 	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(nodes, n2_next_idx);
-	return
+	const long delta =
 		- DIST(n1, n1_prev, matrix)
 		- DIST(n1, n1_next, matrix)
 		- DIST(n2, n2_prev, matrix)
@@ -789,10 +811,28 @@ long tsp_nodes_evaluate_swap_nodes(const struct sp_stack *nodes, const struct ts
 		+ DIST(n2, n1_next.id != n2.id ? n1_next : n1, matrix)
 		+ DIST(n1, n2_prev.id != n1.id ? n2_prev : n2, matrix)
 		+ DIST(n1, n2_next.id != n1.id ? n2_next : n2, matrix);
+
+	#ifdef TSP_TEST_EVAL
+	struct sp_stack *const debug_nodes = sp_stack_create(sizeof(struct tsp_node), nodes->size);
+	sp_stack_copy(debug_nodes, nodes, NULL);
+	tsp_nodes_swap_nodes(debug_nodes, idx1, idx2);
+	const unsigned long score_after = tsp_nodes_evaluate(debug_nodes, matrix);
+	const long target_delta = score_after - score_before;
+	if (delta != target_delta) {
+		error(("incorrect delta: got %ld, expected %ld", delta, target_delta));
+	}
+	sp_stack_destroy(debug_nodes, NULL);
+	#endif /* TSP_TEST_EVAL */
+
+	return delta;
 }
 
 long tsp_nodes_evaluate_swap_edges(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2)
 {
+	#ifdef TSP_TEST_EVAL
+	const unsigned long score_before = tsp_nodes_evaluate(nodes, matrix);
+	#endif /* TSP_TEST_EVAL */
+
 	/* Make sure idx1 < idx2 */
 	if (idx1 > idx2) {
 		const size_t tmp = idx1;
@@ -806,11 +846,25 @@ long tsp_nodes_evaluate_swap_edges(const struct sp_stack *nodes, const struct ts
 	const size_t n2_next_idx = (idx2 + 1) % nodes->size;
 	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(nodes, n1_prev_idx);
 	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(nodes, n2_next_idx);
-	return
+	const long delta =
 		- DIST(n1, n1_prev, matrix)
 		- DIST(n2, n2_next, matrix)
 		+ DIST(n1, n2_next.id != n1.id ? n2_next : n2, matrix)
 		+ DIST(n2, n1_prev.id != n2.id ? n1_prev : n1, matrix);
+
+	#ifdef TSP_TEST_EVAL
+	struct sp_stack *const debug_nodes = sp_stack_create(sizeof(struct tsp_node), nodes->size);
+	sp_stack_copy(debug_nodes, nodes, NULL);
+	tsp_nodes_swap_edges(debug_nodes, idx1, idx2);
+	const unsigned long score_after = tsp_nodes_evaluate(debug_nodes, matrix);
+	const long target_delta = score_after - score_before;
+	if (delta != target_delta) {
+		error(("incorrect delta: got %ld, expected %ld", delta, target_delta));
+	}
+	sp_stack_destroy(debug_nodes, NULL);
+	#endif /* TSP_TEST_EVAL */
+
+	return delta;
 }
 
 bool id_val_pair_min_val_cmp(const void *a, const void *b)
