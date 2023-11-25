@@ -69,14 +69,16 @@ struct sp_stack *tsp_nodes_read(const char *fpath)
 void tsp_dist_matrix_init(struct tsp_dist_matrix *matrix, const struct sp_stack *nodes)
 {
 	matrix->dist = malloc_or_die(nodes->size * nodes->size * sizeof(unsigned));
+	matrix->nodes = malloc_or_die(nodes->size * sizeof(struct tsp_node));
 	for (size_t i = 0; i < nodes->size; i++) {
+		const struct tsp_node node1 = *(struct tsp_node*)sp_stack_get(nodes, i);
 		for (size_t j = i + 1; j < nodes->size; j++) {
-			const struct tsp_node node1 = *(struct tsp_node*)sp_stack_get(nodes, i);
 			const struct tsp_node node2 = *(struct tsp_node*)sp_stack_get(nodes, j);
 			const unsigned dist = ROUND(euclidean_dist(node1.x, node1.y, node2.x, node2.y));
 			matrix->dist[node1.id * nodes->size + node2.id] = dist;
 			matrix->dist[node2.id * nodes->size + node1.id] = dist;
 		}
+		matrix->nodes[node1.id] = node1;
 	}
 	matrix->size = nodes->size;
 }

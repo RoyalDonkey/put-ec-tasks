@@ -16,8 +16,9 @@ struct tsp_node {
 };
 
 struct tsp_dist_matrix {
-	unsigned *dist;
-	size_t size;  /* Number of nodes */
+	unsigned *dist;          /* 2D size x size matrix of distances */
+	struct tsp_node *nodes;  /* 1D array of nodes, indexed by node ID */
+	size_t size;             /* Number of nodes */
 };
 
 struct tsp_cand_matrix {
