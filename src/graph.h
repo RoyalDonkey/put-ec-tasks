@@ -60,7 +60,7 @@ struct sp_stack *tsp_nodes_read(const char *fpath);
 void tsp_dist_matrix_init(struct tsp_dist_matrix *matrix, const struct sp_stack *nodes);
 void tsp_dist_matrix_print(struct tsp_dist_matrix matrix);
 struct tsp_graph *tsp_graph_create(const struct sp_stack *nodes);
-struct tsp_graph *tsp_graph_empty();
+struct tsp_graph *tsp_graph_empty(void);
 struct tsp_graph *tsp_graph_import(const char *fpath);
 void tsp_graph_copy(struct tsp_graph *dest, const struct tsp_graph *src);
 void tsp_graph_destroy(struct tsp_graph *graph);

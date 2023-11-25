@@ -102,7 +102,7 @@ struct tsp_graph *tsp_graph_create(const struct sp_stack *nodes)
 	return graph;
 }
 
-struct tsp_graph *tsp_graph_empty()
+struct tsp_graph *tsp_graph_empty(void)
 {
 	struct tsp_graph *graph;
 	graph = malloc_or_die(sizeof(struct tsp_graph));
