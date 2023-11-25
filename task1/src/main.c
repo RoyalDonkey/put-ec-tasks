@@ -112,7 +112,7 @@ void run_greedy_algorithm(const char *algo_name, activate_func_t greedy_algo)
 
 	printf("solutions found by %s:\n", algo_name);
 	printf("%-20s\t%8s\t%8s\t%8s\n", "file", "min", "avg", "max");
-	for (size_t i = 0; i < ARRLEN(best_solution); i++) {
+	for (size_t i = 0; i < ARRLEN(best_solution); i++) {  /* NOLINT(bugprone-sizeof-expression) */
 		char instance_fpath[128], out_fname[128];
 		printf("%-20s\t%8lu\t%8lu\t%8lu\n",
 			files[i],

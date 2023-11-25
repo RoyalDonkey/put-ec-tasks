@@ -194,7 +194,7 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
 
 	printf("solutions found by %s:\n", label);
 	printf("%-20s\t%8s\t%8s\t%8s\n", "file", "min", "avg", "max");
-	for (size_t i = 0; i < ARRLEN(best_solution); i++) {
+	for (size_t i = 0; i < ARRLEN(best_solution); i++) {  /* NOLINT(bugprone-sizeof-expression) */
 		char instance_fpath[128], out_fname[128];
 		printf("%-20s\t%8lu\t%8lu\t%8lu\n",
 			nodes_files[i],
@@ -212,7 +212,7 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
 	}
 	printf("running time (milliseconds):\n");
 	printf("%-20s\t%8s\t%8s\t%8s\n", "file", "min", "avg", "max");
-	for (size_t i = 0; i < ARRLEN(best_solution); i++) {
+	for (size_t i = 0; i < ARRLEN(best_solution); i++) {  /* NOLINT(bugprone-sizeof-expression) */
 		printf("%-20s\t%8.3f\t%8.3f\t%8.3f\n",
 			nodes_files[i],
 			1000.0 * time_min[i],
