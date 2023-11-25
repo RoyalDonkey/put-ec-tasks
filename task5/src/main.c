@@ -124,13 +124,13 @@ void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 			             j = best_move.indices.dest;
 			switch (best_move.type) {
 				case MOVE_TYPE_NODES:
-					tsp_nodes_swap_nodes(active, i, j);
+					tsp_graph_swap_nodes_with_delta_cache(graph, i, j, delta_cache);
 				break;
 				case MOVE_TYPE_EDGES:
-					tsp_nodes_swap_edges(active, i, j);
+					tsp_graph_swap_edges_with_delta_cache(graph, i, j, delta_cache);
 				break;
 				case MOVE_TYPE_INTER:
-					tsp_graph_inter_swap(graph, i, j);
+					tsp_graph_inter_swap_with_delta_cache(graph, i, j, delta_cache);
 				break;
 			}
 		}
