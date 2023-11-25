@@ -7,14 +7,6 @@
 
 #define TSP_MAX_NODE_ID 200
 
-/* Distance between nodes N1 and N2, with optional pointer to distance matrix M
- * (if M == NULL, euclidean_distance is invoked). */
-#define DIST(N1, N2, M) ( \
-	((M) != NULL) ? \
-	(((struct tsp_dist_matrix*)M)->dist[(N1).id * ((struct tsp_dist_matrix*)M)->size + (N2).id]) : \
-	ROUND(euclidean_dist((N1).x, (N1).y, (N2).x, (N2).y)))
-
-
 /* Structs */
 struct tsp_node {
 	unsigned id;  /* Unique ID used to access the distance matrix */

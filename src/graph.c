@@ -25,6 +25,11 @@ struct id_val_pair {
 int _print_node(const void *ptr);
 
 
+inline unsigned long mdist(size_t id1, size_t id2, const struct tsp_dist_matrix *matrix)
+{
+	return matrix->dist[id1 * matrix->size + id2];
+}
+
 struct sp_stack *tsp_nodes_read(const char *fpath)
 {
 	FILE *f;
@@ -68,7 +73,7 @@ void tsp_dist_matrix_init(struct tsp_dist_matrix *matrix, const struct sp_stack 
 		for (size_t j = i + 1; j < nodes->size; j++) {
 			const struct tsp_node node1 = *(struct tsp_node*)sp_stack_get(nodes, i);
 			const struct tsp_node node2 = *(struct tsp_node*)sp_stack_get(nodes, j);
-			const unsigned dist = DIST(node1, node2, NULL);
+			const unsigned dist = ROUND(euclidean_dist(node1.x, node1.y, node2.x, node2.y));
 			matrix->dist[node1.id * nodes->size + node2.id] = dist;
 			matrix->dist[node2.id * nodes->size + node1.id] = dist;
 		}
@@ -381,13 +386,13 @@ unsigned long tsp_nodes_evaluate(const struct sp_stack *nodes, const struct tsp_
 	unsigned long score = prev_node.cost;
 	for (size_t i = 1; i < nodes->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
-		score += node.cost + DIST(node, prev_node, matrix);
+		score += node.cost + mdist(node.id, prev_node.id, matrix);
 		prev_node = node;
 	}
 
 	const struct tsp_node first_node = *(struct tsp_node*)sp_stack_peek(nodes);
 	const struct tsp_node last_node = *(struct tsp_node*)sp_stack_get(nodes, nodes->size - 1);
-	return score + DIST(last_node, first_node, matrix);
+	return score + mdist(last_node.id, first_node.id, matrix);
 }
 
 /* Returns the difference in graph score, if a given move was made  */
@@ -400,9 +405,9 @@ long tsp_graph_evaluate_move(const struct tsp_graph *graph, struct tsp_move move
 	const struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(active, move.dest % active->size);
 	const struct tsp_node next_node = *(struct tsp_node*)sp_stack_get(active, (move.dest + active->size - 1) % active->size);
 	return
-		- DIST(prev_node, next_node, &graph->dist_matrix)
-		+ DIST(node, prev_node, &graph->dist_matrix)
-		+ DIST(node, next_node, &graph->dist_matrix)
+		- mdist(prev_node.id, next_node.id, &graph->dist_matrix)
+		+ mdist(node.id, prev_node.id, &graph->dist_matrix)
+		+ mdist(node.id, next_node.id, &graph->dist_matrix)
 		+ node.cost;
 }
 
@@ -456,7 +461,7 @@ size_t tsp_nodes_find_nn(const struct sp_stack *nodes, const struct tsp_dist_mat
 	double lowest_delta = DBL_MAX;
 	for (size_t i = 0; i < nodes->size; i++) {
 		const struct tsp_node node2 = *(struct tsp_node*)sp_stack_get(nodes, i);
-		const double delta = DIST(node, node2, matrix) + node2.cost;
+		const double delta = mdist(node.id, node2.id, matrix) + node2.cost;
 		if (delta < lowest_delta) {
 			ret = i;
 			lowest_delta = delta;
@@ -472,8 +477,8 @@ size_t tsp_nodes_find_2nn(const struct sp_stack *nodes, const struct tsp_dist_ma
 	for (size_t i = 0; i < nodes->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes, i);
 		const double delta =
-			+ DIST(node, node1, matrix)
-			+ DIST(node, node2, matrix)
+			+ mdist(node.id, node1.id, matrix)
+			+ mdist(node.id, node2.id, matrix)
 			+ node.cost;
 		if (delta < lowest_delta) {
 			ret = i;
@@ -505,9 +510,9 @@ struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph)
 		/* Calculate difference in score if the considered vacant node
 		 * was inserted between the 2 closest nodes */
 		const double delta =
-			- DIST(node, prev_node, &graph->dist_matrix)
-			+ DIST(nn_node, node, &graph->dist_matrix)
-			+ DIST(nn_node, prev_node, &graph->dist_matrix)
+			- mdist(node.id, prev_node.id, &graph->dist_matrix)
+			+ mdist(nn_node.id, node.id, &graph->dist_matrix)
+			+ mdist(nn_node.id, prev_node.id, &graph->dist_matrix)
 			+ nn_node.cost;
 		if (delta < lowest_delta) {
 			ret.src = nn_node_idx;
@@ -530,9 +535,9 @@ struct tsp_move tsp_graph_find_nc(const struct tsp_graph *graph)
 	/* Calculate difference in score if the considered vacant node
 	 * was inserted between the 2 closest nodes */
 	const double delta =
-		- DIST(first_node, last_node, &graph->dist_matrix)
-		+ DIST(nn_node, first_node, &graph->dist_matrix)
-		+ DIST(nn_node, last_node, &graph->dist_matrix)
+		- mdist(first_node.id, last_node.id, &graph->dist_matrix)
+		+ mdist(nn_node.id, first_node.id, &graph->dist_matrix)
+		+ mdist(nn_node.id, last_node.id, &graph->dist_matrix)
 		+ nn_node.cost;
 	if (delta < lowest_delta) {
 		ret.src = nn_node_idx;
@@ -767,11 +772,11 @@ long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_
 	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(active, n2_prev_idx);
 	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(active, n2_next_idx);
 	const long delta =
-		- DIST(n2, n2_prev, &graph->dist_matrix)
-		- DIST(n2, n2_next, &graph->dist_matrix)
+		- mdist(n2.id, n2_prev.id, &graph->dist_matrix)
+		- mdist(n2.id, n2_next.id, &graph->dist_matrix)
 		- n2.cost
-		+ DIST(n1, n2_prev, &graph->dist_matrix)
-		+ DIST(n1, n2_next, &graph->dist_matrix)
+		+ mdist(n1.id, n2_prev.id, &graph->dist_matrix)
+		+ mdist(n1.id, n2_next.id, &graph->dist_matrix)
 		+ n1.cost;
 
 	#ifdef TSP_TEST_EVAL
@@ -806,14 +811,14 @@ long tsp_nodes_evaluate_swap_nodes(const struct sp_stack *nodes, const struct ts
 	const struct tsp_node n2_prev = *(struct tsp_node*)sp_stack_get(nodes, n2_prev_idx);
 	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(nodes, n2_next_idx);
 	const long delta =
-		- DIST(n1, n1_prev, matrix)
-		- DIST(n1, n1_next, matrix)
-		- DIST(n2, n2_prev, matrix)
-		- DIST(n2, n2_next, matrix)
-		+ DIST(n2, n1_prev.id != n2.id ? n1_prev : n1, matrix)
-		+ DIST(n2, n1_next.id != n2.id ? n1_next : n1, matrix)
-		+ DIST(n1, n2_prev.id != n1.id ? n2_prev : n2, matrix)
-		+ DIST(n1, n2_next.id != n1.id ? n2_next : n2, matrix);
+		- mdist(n1.id, n1_prev.id, matrix)
+		- mdist(n1.id, n1_next.id, matrix)
+		- mdist(n2.id, n2_prev.id, matrix)
+		- mdist(n2.id, n2_next.id, matrix)
+		+ mdist(n2.id, (n1_prev.id != n2.id ? n1_prev : n1).id, matrix)
+		+ mdist(n2.id, (n1_next.id != n2.id ? n1_next : n1).id, matrix)
+		+ mdist(n1.id, (n2_prev.id != n1.id ? n2_prev : n2).id, matrix)
+		+ mdist(n1.id, (n2_next.id != n1.id ? n2_next : n2).id, matrix);
 
 	#ifdef TSP_TEST_EVAL
 	struct sp_stack *const debug_nodes = sp_stack_create(sizeof(struct tsp_node), nodes->size);
@@ -850,10 +855,10 @@ long tsp_nodes_evaluate_swap_edges(const struct sp_stack *nodes, const struct ts
 	const struct tsp_node n1_prev = *(struct tsp_node*)sp_stack_get(nodes, n1_prev_idx);
 	const struct tsp_node n2_next = *(struct tsp_node*)sp_stack_get(nodes, n2_next_idx);
 	const long delta =
-		- DIST(n1, n1_prev, matrix)
-		- DIST(n2, n2_next, matrix)
-		+ DIST(n1, n2_next.id != n1.id ? n2_next : n2, matrix)
-		+ DIST(n2, n1_prev.id != n2.id ? n1_prev : n1, matrix);
+		- mdist(n1.id, n1_prev.id, matrix)
+		- mdist(n2.id, n2_next.id, matrix)
+		+ mdist(n1.id, (n2_next.id != n1.id ? n2_next : n2).id, matrix)
+		+ mdist(n2.id, (n1_prev.id != n2.id ? n1_prev : n1).id, matrix);
 
 	#ifdef TSP_TEST_EVAL
 	struct sp_stack *const debug_nodes = sp_stack_create(sizeof(struct tsp_node), nodes->size);
@@ -917,7 +922,7 @@ struct tsp_cand_matrix *tsp_graph_compute_candidates(const struct tsp_graph *gra
 			const struct tsp_node node_neighbor = *(struct tsp_node*)sp_stack_get(nodes, j);
 			const struct id_val_pair p = {
 				node_neighbor.id,
-				DIST(node, node_neighbor, matrix),
+				mdist(node.id, node_neighbor.id, matrix),
 			};
 			tsp_heap_push(heap, &p);
 		}
