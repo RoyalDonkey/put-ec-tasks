@@ -553,12 +553,12 @@ struct sp_stack *tsp_graph_find_rcl(const struct tsp_graph *graph, size_t size, 
 	assert(size <= vacant->size);
 	assert(p >= 0.0 && p <= 1.0);
 
-        /* This function is a performance mess. It uses a copy of vacant nodes
-         * for in-place shuffling, relies on node indices, but at the end the
-         * indices are out-of-sync with the original vacant nodes, so we also
-         * need to store copies of node IDs and find their "real" vacant indices
-         * afterwards. Yikes. */
-        struct node_move {
+	/* This function is a performance mess. It uses a copy of vacant nodes
+	 * for in-place shuffling, relies on node indices, but at the end the
+	 * indices are out-of-sync with the original vacant nodes, so we also
+	 * need to store copies of node IDs and find their "real" vacant indices
+	 * afterwards. Yikes. */
+	struct node_move {
 		unsigned node_id;      /* ID of the node, for finding the "real" vacant indices after */
 		struct tsp_move move;  /* Move from vacant_copy to graph */
 	};
