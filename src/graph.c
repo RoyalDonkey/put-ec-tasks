@@ -704,7 +704,7 @@ struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct s
 	return best_move;
 }
 
-void tsp_graph_inter_swap(struct tsp_graph *graph, size_t vacant_idx, size_t active_idx)
+void tsp_graph_inter_swap(struct tsp_graph *graph, size_t active_idx, size_t vacant_idx)
 {
 	struct sp_stack *const vacant = graph->nodes_vacant;
 	struct sp_stack *const active = graph->nodes_active;
@@ -758,7 +758,7 @@ void tsp_nodes_swap_edges(struct sp_stack *nodes, size_t idx1, size_t idx2)
 	}
 }
 
-long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_idx, size_t active_idx)
+long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t active_idx, size_t vacant_idx)
 {
 	#ifdef TSP_TEST_EVAL
 	const unsigned long score_before = tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix);
@@ -784,7 +784,7 @@ long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_
 	#ifdef TSP_TEST_EVAL
 	struct tsp_graph *const debug_graph = tsp_graph_empty();
 	tsp_graph_copy(debug_graph, graph);
-	tsp_graph_inter_swap(debug_graph, vacant_idx, active_idx);
+	tsp_graph_inter_swap(debug_graph, active_idx, vacant_idx);
 	const unsigned long score_after = tsp_nodes_evaluate(debug_graph->nodes_active, &debug_graph->dist_matrix);
 	const long target_delta = score_after - score_before;
 	if (delta != target_delta) {
@@ -959,7 +959,7 @@ void tsp_cand_matrix_destroy(struct tsp_cand_matrix *cand_matrix)
 	free(cand_matrix);
 }
 
-bool tsp_graph_inter_swap_adds_candidate(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix, size_t vacant_idx, size_t active_idx)
+bool tsp_graph_inter_swap_adds_candidate(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix, size_t active_idx, size_t vacant_idx)
 {
 	const struct sp_stack *const vacant = graph->nodes_vacant;
 	const struct sp_stack *const active = graph->nodes_active;
@@ -1087,7 +1087,7 @@ void tsp_delta_cache_destroy(struct tsp_delta_cache *delta_matrix)
 	free(delta_matrix);
 }
 
-long tsp_graph_evaluate_inter_swap_with_delta_cache(const struct tsp_graph *graph, size_t vacant_idx, size_t active_idx, struct tsp_delta_cache *cache)
+long tsp_graph_evaluate_inter_swap_with_delta_cache(const struct tsp_graph *graph, size_t active_idx, size_t vacant_idx, struct tsp_delta_cache *cache)
 {
 	if (cache->inter_swap[active_idx * cache->size + vacant_idx] != LONG_MIN) {
 		#ifdef TSP_TEST_DELTA_CACHE
@@ -1096,7 +1096,7 @@ long tsp_graph_evaluate_inter_swap_with_delta_cache(const struct tsp_graph *grap
 
 		return cache->inter_swap[active_idx * cache->size + vacant_idx];
 	}
-	const long delta = tsp_graph_evaluate_inter_swap(graph, vacant_idx, active_idx);
+	const long delta = tsp_graph_evaluate_inter_swap(graph, active_idx, vacant_idx);
 	cache->inter_swap[active_idx * cache->size + vacant_idx] = delta;
 	return delta;
 }
@@ -1123,13 +1123,13 @@ long tsp_nodes_evaluate_swap_edges_with_delta_cache(const struct sp_stack *nodes
 	return delta;
 }
 
-void tsp_graph_inter_swap_with_delta_cache(struct tsp_graph *graph, size_t vacant_idx, size_t active_idx, struct tsp_delta_cache *cache)
+void tsp_graph_inter_swap_with_delta_cache(struct tsp_graph *graph, size_t active_idx, size_t vacant_idx, struct tsp_delta_cache *cache)
 {
 	struct sp_stack *const active = graph->nodes_active;
 
 	const size_t n2_prev_idx = (active_idx + active->size - 1) % active->size;
 	const size_t n2_next_idx = (active_idx + 1) % active->size;
-	tsp_graph_inter_swap(graph, vacant_idx, active_idx);
+	tsp_graph_inter_swap(graph, active_idx, vacant_idx);
 	tsp_graph_update_delta_cache_for_node(graph, cache, n2_prev_idx);
 	tsp_graph_update_delta_cache_for_node(graph, cache, n2_next_idx);
 
@@ -1186,7 +1186,7 @@ void tsp_delta_cache_verify_inter_swap(const struct tsp_delta_cache *cache, cons
 		for (size_t vacant_idx = 0; vacant_idx < cache->size; vacant_idx++) {
 			const size_t vacant_id = ((struct tsp_node*)sp_stack_get(vacant, vacant_idx))->id;
 			const long cached_inter_delta = cache->inter_swap[active_id * cache->size + vacant_id];
-			const long true_inter_delta = tsp_graph_evaluate_inter_swap(graph, vacant_idx, active_idx);
+			const long true_inter_delta = tsp_graph_evaluate_inter_swap(graph, active_idx, vacant_idx);
 			if (cached_inter_delta != LONG_MIN && cached_inter_delta != true_inter_delta) {
 				error(("incorrect delta: got %ld, expected %ld", cached_inter_delta, true_inter_delta));
 			}
@@ -1245,7 +1245,7 @@ void tsp_graph_update_delta_cache_for_node(const struct tsp_graph *graph, struct
 	/* Update inter_swap deltas between the target node and all vacant nodes */
 	for (size_t vacant_idx = 0; vacant_idx < vacant->size; vacant_idx++) {
 		const size_t vacant_id = ((struct tsp_node*)sp_stack_get(vacant, vacant_idx))->id;
-		cache->inter_swap[node_id * cache->size + vacant_id] = tsp_graph_evaluate_inter_swap(graph, vacant_idx, node_idx);
+		cache->inter_swap[node_id * cache->size + vacant_id] = tsp_graph_evaluate_inter_swap(graph, node_idx, vacant_idx);
 	}
 
 	/* Update swap_nodes/edges deltas between the target node and all active nodes */

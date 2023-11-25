@@ -78,18 +78,18 @@ struct tsp_move tsp_graph_find_2regret(const struct tsp_graph *graph, const stru
 struct tsp_move tsp_graph_find_wsc(const struct tsp_graph *graph, const struct sp_stack *rcl, double ratio);
 
 
-void tsp_graph_inter_swap(struct tsp_graph *graph, size_t vacant_idx, size_t active_idx);
+void tsp_graph_inter_swap(struct tsp_graph *graph, size_t active_idx, size_t vacant_idx);
 void tsp_nodes_swap_nodes(struct sp_stack *nodes, size_t idx1, size_t idx2);
 void tsp_nodes_swap_edges(struct sp_stack *nodes, size_t idx1, size_t idx2);
 
-long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t vacant_idx, size_t active_idx);
+long tsp_graph_evaluate_inter_swap(const struct tsp_graph *graph, size_t active_idx, size_t vacant_idx);
 long tsp_nodes_evaluate_swap_nodes(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2);
 long tsp_nodes_evaluate_swap_edges(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2);
 
 struct tsp_cand_matrix *tsp_cand_matrix_create(size_t size);
 struct tsp_cand_matrix *tsp_graph_compute_candidates(const struct tsp_graph *graph, size_t n);
 void tsp_cand_matrix_destroy(struct tsp_cand_matrix *cand_matrix);
-bool tsp_graph_inter_swap_adds_candidate(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix, size_t vacant_idx, size_t active_idx);
+bool tsp_graph_inter_swap_adds_candidate(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix, size_t active_idx, size_t vacant_idx);
 bool tsp_nodes_swap_nodes_adds_candidate(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix, size_t idx1, size_t idx2);
 bool tsp_nodes_swap_edges_adds_candidate(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix, size_t idx1, size_t idx2);
 bool *tsp_graph_cache_inter_swap_adds_candidates(const struct tsp_graph *graph, const struct tsp_cand_matrix *cand_matrix);
@@ -99,11 +99,11 @@ bool *tsp_nodes_cache_swap_edges_adds_candidates(const struct sp_stack *nodes, c
 struct tsp_delta_cache *tsp_delta_cache_create(size_t size);
 void tsp_delta_cache_destroy(struct tsp_delta_cache *delta_matrix);
 
-long tsp_graph_evaluate_inter_swap_with_delta_cache(const struct tsp_graph *graph, size_t vacant_idx, size_t active_idx, struct tsp_delta_cache *cache);
+long tsp_graph_evaluate_inter_swap_with_delta_cache(const struct tsp_graph *graph, size_t active_idx, size_t vacant_idx, struct tsp_delta_cache *cache);
 long tsp_nodes_evaluate_swap_nodes_with_delta_cache(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
 long tsp_nodes_evaluate_swap_edges_with_delta_cache(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
 
-void tsp_graph_inter_swap_with_delta_cache(struct tsp_graph *graph, size_t vacant_idx, size_t active_idx, struct tsp_delta_cache *cache);
+void tsp_graph_inter_swap_with_delta_cache(struct tsp_graph *graph, size_t active_idx, size_t vacant_idx, struct tsp_delta_cache *cache);
 void tsp_graph_swap_nodes_with_delta_cache(struct tsp_graph *graph, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
 void tsp_graph_swap_edges_with_delta_cache(struct tsp_graph *graph, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
 
