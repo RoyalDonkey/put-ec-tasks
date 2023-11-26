@@ -80,7 +80,7 @@ void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 		for (size_t i = 0; i < active->size; i++) {
 			for (size_t j = i; j < active->size; j++) {
 				if (swap_nodes_adds_candidate[i * n_nodes + j]) {
-					const long delta = tsp_nodes_evaluate_swap_nodes_with_delta_cache(active, &graph->dist_matrix, i, j, delta_cache);
+					const long delta = tsp_graph_evaluate_swap_nodes_with_delta_cache(graph, i, j, delta_cache);
 					if (delta < min_delta) {
 						min_delta = delta;
 						best_move.indices.src = i;
@@ -91,7 +91,7 @@ void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 				}
 
 				if (swap_edges_adds_candidate[i * n_nodes + j]) {
-					const long delta = tsp_nodes_evaluate_swap_edges_with_delta_cache(active, &graph->dist_matrix, i, j, delta_cache);
+					const long delta = tsp_graph_evaluate_swap_edges_with_delta_cache(graph, i, j, delta_cache);
 					if (delta < min_delta) {
 						min_delta = delta;
 						best_move.indices.src = i;

@@ -101,8 +101,8 @@ void tsp_delta_cache_print(const long *delta_matrix, size_t size);
 void tsp_delta_cache_destroy(struct tsp_delta_cache *delta_matrix);
 
 long tsp_graph_evaluate_inter_swap_with_delta_cache(const struct tsp_graph *graph, size_t active_idx, size_t vacant_idx, struct tsp_delta_cache *cache);
-long tsp_nodes_evaluate_swap_nodes_with_delta_cache(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
-long tsp_nodes_evaluate_swap_edges_with_delta_cache(const struct sp_stack *nodes, const struct tsp_dist_matrix *matrix, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
+long tsp_graph_evaluate_swap_nodes_with_delta_cache(const struct tsp_graph *graph, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
+long tsp_graph_evaluate_swap_edges_with_delta_cache(const struct tsp_graph *graph, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
 
 void tsp_graph_inter_swap_with_delta_cache(struct tsp_graph *graph, size_t active_idx, size_t vacant_idx, struct tsp_delta_cache *cache);
 void tsp_graph_swap_nodes_with_delta_cache(struct tsp_graph *graph, size_t idx1, size_t idx2, struct tsp_delta_cache *cache);
