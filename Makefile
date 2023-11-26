@@ -43,7 +43,7 @@ clean:
 debug: CFLAGS += -g -Og -ftrapv
 debug: clean all
 
-profile: CFLAGS += -pg
+profile: CFLAGS += -Wno-error -DNDEBUG -pg
 profile: LDFLAGS += -pg
 profile: clean all
 

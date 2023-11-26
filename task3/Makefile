@@ -36,6 +36,6 @@ debug: clean all
 fast: CFLAGS += -Wno-error -DNDEBUG
 fast: clean all
 
-profile: CFLAGS += -pg
+profile: CFLAGS += -Wno-error -DNDEBUG -pg
 profile: LDFLAGS += -pg
 profile: clean all
