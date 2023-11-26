@@ -1079,6 +1079,28 @@ struct tsp_delta_cache *tsp_delta_cache_create(size_t size)
 	return ret;
 }
 
+void tsp_delta_cache_print(const long *delta_matrix, size_t size)
+{
+	printf("tsp_delta_cache_print()\n");
+	printf("       ");
+	for (size_t j = 0; j < size; j++) {
+		printf("[%3zu]  ", j);
+	}
+	putchar('\n');
+	for (size_t i = 0; i < size; i++) {
+		printf("[%3zu]  ", i);
+		for (size_t j = 0; j < size; j++) {
+			const long delta = delta_matrix[i * size + j];
+			if (delta == LONG_MIN) {
+				printf("%5s  ", "-");
+			} else {
+				printf("%5ld  ", delta);
+			}
+		}
+		putchar('\n');
+	}
+}
+
 void tsp_delta_cache_destroy(struct tsp_delta_cache *delta_matrix)
 {
 	free(delta_matrix->inter_swap);

@@ -97,6 +97,7 @@ bool *tsp_nodes_cache_swap_nodes_adds_candidates(const struct sp_stack *nodes, c
 bool *tsp_nodes_cache_swap_edges_adds_candidates(const struct sp_stack *nodes, const struct tsp_cand_matrix *cand_matrix);
 
 struct tsp_delta_cache *tsp_delta_cache_create(size_t size);
+void tsp_delta_cache_print(const long *delta_matrix, size_t size);
 void tsp_delta_cache_destroy(struct tsp_delta_cache *delta_matrix);
 
 long tsp_graph_evaluate_inter_swap_with_delta_cache(const struct tsp_graph *graph, size_t active_idx, size_t vacant_idx, struct tsp_delta_cache *cache);
