@@ -59,6 +59,74 @@ struct sp_stack *init_moves(size_t n_nodes)
 	return moves;
 }
 
+void lsearch_delta_steepest(struct tsp_graph *graph)
+{
+	struct sp_stack *const active = graph->nodes_active;
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct tsp_delta_cache *const delta_cache = tsp_delta_cache_create(graph->dist_matrix.size);
+
+	bool did_improve = true;
+	while (did_improve) {
+		struct lsearch_move best_move = {0};
+		long min_delta = 0;
+		did_improve = false;
+
+		for (size_t i = 0; i < active->size; i++) {
+			for (size_t j = i; j < active->size; j++) {
+				long delta;
+
+				delta = tsp_graph_evaluate_swap_nodes_with_delta_cache(graph, i, j, delta_cache);
+				if (delta < min_delta) {
+					min_delta = delta;
+					best_move.indices.src = i;
+					best_move.indices.dest = j;
+					best_move.type = MOVE_TYPE_NODES;
+					did_improve = true;
+				}
+
+				delta = tsp_graph_evaluate_swap_edges_with_delta_cache(graph, i, j, delta_cache);
+				if (delta < min_delta) {
+					min_delta = delta;
+					best_move.indices.src = i;
+					best_move.indices.dest = j;
+					best_move.type = MOVE_TYPE_EDGES;
+					did_improve = true;
+				}
+			}
+		}
+
+		for (size_t i = 0; i < active->size; i++) {
+			for (size_t j = 0; j < vacant->size; j++) {
+				const long delta = tsp_graph_evaluate_inter_swap_with_delta_cache(graph, i, j, delta_cache);
+				if (delta < min_delta) {
+					min_delta = delta;
+					best_move.indices.src = i;
+					best_move.indices.dest = j;
+					best_move.type = MOVE_TYPE_INTER;
+					did_improve = true;
+				}
+			}
+		}
+
+		if (did_improve) {
+			const size_t i = best_move.indices.src,
+			             j = best_move.indices.dest;
+			switch (best_move.type) {
+				case MOVE_TYPE_NODES:
+					tsp_graph_swap_nodes_with_delta_cache(graph, i, j, delta_cache);
+				break;
+				case MOVE_TYPE_EDGES:
+					tsp_graph_swap_edges_with_delta_cache(graph, i, j, delta_cache);
+				break;
+				case MOVE_TYPE_INTER:
+					tsp_graph_inter_swap_with_delta_cache(graph, i, j, delta_cache);
+				break;
+			}
+		}
+	}
+	tsp_delta_cache_destroy(delta_cache);
+}
+
 void lsearch_candidates_delta_steepest(struct tsp_graph *graph)
 {
 	struct sp_stack *const active = graph->nodes_active;
@@ -229,6 +297,7 @@ int main(void)
 		nodes[i] = tsp_nodes_read(nodes_files[i]);
 	}
 
+	run_lsearch_algorithm("lsd-steepest-random", lsearch_delta_steepest);
 	run_lsearch_algorithm("lscd-steepest-random", lsearch_candidates_delta_steepest);
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
