@@ -213,7 +213,7 @@ void tsp_node_print(struct tsp_node node)
 
 bool tsp_node_eq(struct tsp_node node1, struct tsp_node node2)
 {
-	return node1.x == node2.x && node1.y == node2.y;
+	return node1.id == node2.id && node1.x == node2.x && node1.y == node2.y && node1.cost == node2.cost;
 }
 
 void tsp_nodes_print(const struct sp_stack *nodes)
