@@ -1304,11 +1304,12 @@ void tsp_graph_update_delta_cache_for_node(const struct tsp_graph *graph, struct
 	/* Update inter_swap deltas between the target node and all vacant nodes */
 	for (size_t vacant_idx = 0; vacant_idx < vacant->size; vacant_idx++) {
 		const size_t vacant_id = ((struct tsp_node*)sp_stack_get(vacant, vacant_idx))->id;
-		cache->inter_swap[vacant_id * cache->size + node_id] = LONG_MIN;  /* Delete stale cache */
 		if (cache->inter_swap[node_id * cache->size + vacant_id] == LONG_MIN) {
 			continue;
 		}
-		cache->inter_swap[node_id * cache->size + vacant_id] = tsp_graph_evaluate_inter_swap(graph, node_idx, vacant_idx);
+		const long inter_swap_delta = tsp_graph_evaluate_inter_swap(graph, node_idx, vacant_idx);
+		cache->inter_swap[node_id * cache->size + vacant_id] = inter_swap_delta;
+		cache->inter_swap[node_id * cache->size + vacant_id] = inter_swap_delta;
 	}
 	/* Delete stale deltas between the target node and all active nodes */
 	for (size_t active_idx = 0; active_idx < active->size; active_idx++) {
