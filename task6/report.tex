@@ -49,7 +49,7 @@
 
 \title{Evolutionary Computation Lab VI}
 \author{Piotr Kaszubski 148283}
-\date{}
+\date{Monday, December  4, 2023}
 
 \begin{document}
 \maketitle
@@ -75,8 +75,153 @@ then only the distance matrix (no nodes coordinates) should be accessed by
 optimization methods to allow instances defined only by distance matrices.
 
 \section{Pseudocode}
+\subsection{Perturbation}
+I define a perturbation as applying \textbf{10} uniformly random (with
+replacement) swaps (can be both intra- and inter-swaps).
+
+This is the most important part of my algorithm that commenses after the
+initial linear search (expressed in Python for ease of reading):
+\begin{listing}[H]
+	\begin{minted}[highlightlines={}]{python}
+		perturb_delta = -1;
+		anneal_temp = 600.0 * 1.2;
+		while perturb_delta < anneal_temp and clock() < deadline:
+			score_before = evaluate(graph)
+			perturb(graph);
+			lsearch_steepest(graph);
+			score_after = evaluate(graph)
+			perturb_delta = score_after - score_before;
+			anneal_temp /= 1.2;
+	\end{minted}
+\end{listing}
+\vspace{-1cm}
+Basically, I enter a loop where a perturbation is applied, linear search
+performed, and then if the delta is lower than some threshold, we continue.
+This threshold starts at \textbf{600.0} and is divided by \textbf{1.2} after
+every successful perturbation.
+
+The parameters \textbf{10}, \textbf{600.0} and \textbf{1.2} were chosen
+experimentally.
 
 \section{Results}
+
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
+	\multirow{2}*{ls-steepest-random} & 77,866 (75,315--81,017) & 51,453 (49,257--53,785) \\
+	& 71,322 (68,623--76,002) & 48,234 (45,351--51,534) \\
+	\hline
+	\multirow{2}*{lsc-steepest-random} & 89,127 (82,350--101,152) & 62,892 (55,074--74,956) \\
+	& 84,469 (74,393--96,069) & 60,203 (51,897--67,824) \\
+	\hline
+	\multirow{2}*{lsd-steepest-random} & 77,866 (75,315--81,017) & 51,453 (49,257--53,785) \\
+	& 71,322 (68,623--76,002) & 48,234 (45,351--51,534) \\
+	\hline
+	\multirow{2}*{lscd-steepest-random} & 89,127 (82,350--101,152) & 62,892 (55,074--74,956) \\
+	& 84,469 (74,393--96,069) & 60,203 (51,897--67,824) \\
+	\hline
+	\multirow{2}*{msls-steepest-random} & 75,048 (74,178--75,644) & 49,128 (48,311--49,620) \\
+	& 68,211 (67,828--68,622) & 45,649 (45,075--46,032) \\
+	\hline
+	\multirow{2}*{ils-steepest-random} & 74,893 (74,137--75,593) & 48,969 (48,662--49,308) \\
+	& 68,070 (67,676--68,496) & 45,505 (45,016--46,114) \\
+	\hline
+	\caption{Average, minimum and maximum scores of found solutions}
+\end{longtable}
+
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
+	\multirow{2}*{ls-steepest-random} & 85.737 (71.796--105.250) & 85.470 (72.226--98.981) \\
+	& 88.181 (73.757--107.447) & 87.450 (67.483--102.099) \\
+	\hline
+	\multirow{2}*{lsc-steepest-random} & 21.973 (17.070--28.766) & 20.936 (15.504--30.904) \\
+	& 22.002 (17.069--29.329) & 21.179 (15.651--28.530) \\
+	\hline
+	\multirow{2}*{lsd-steepest-random} & 43.684 (33.639--66.647) & 42.885 (33.038--57.912) \\
+	& 43.794 (35.071--54.709) & 43.747 (30.598--74.864) \\
+	\hline
+	\multirow{2}*{lscd-steepest-random} & 28.267 (18.670--39.157) & 27.632 (18.752--39.882) \\
+	& 28.695 (19.072--38.583) & 27.669 (19.578--40.003) \\
+	\hline
+	\caption{Average, minimum, maximum running times per instance (ms)}
+\end{longtable}
+
+\newpage
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
+	\multirow{2}*{msls-steepest-random} & 16.339 (15.744--16.838) & 16.064 (15.530--16.725) \\
+	& 16.606 (16.074--17.191) & 16.282 (15.941--16.693) \\
+	\hline
+	\multirow{2}*{ils-steepest-random} & 16.335 (16.323--16.387) & 16.342 (16.323--16.395) \\
+	& 16.333 (16.324--16.380) & 16.342 (16.323--16.403) \\
+	\hline
+	\caption{Average, minimum, maximum running times for MSLS and ILS (s)}
+\end{longtable}
+
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
+	\multirow{2}*{ils-steepest-random} & 1,149.3 (1,091--1,209) & 1,207.8 (1,139--1,249) \\
+	& 1,117.7 (1,056--1,178) & 1,150.0 (1,067--1,194) \\
+	\hline
+	\caption{Average, minimum, maximum number of times linear search was run}
+\end{longtable}
+
+\subsection{Best solutions}
+All best solutions are available
+\href{https://github.com/RoyalDonkey/put-ec-tasks/tree/7882d44ac2786cd0d4bd691569a498d2ae1f6caa/task6/results}
+{in the repository}, as always. I export them as \verb`*.graph` files, which
+follow a very simple text encoding:
+\begin{listing}[H]
+	\begin{minted}[highlightlines={}]{text}
+			<no_vacant_nodes>;<no_active_nodes>
+			<x>;<y>;<cost>                            \
+			<x>;<y>;<cost>                             | vacant nodes
+			...                                       /
+			<x>;<y>;<cost>                            \
+			<x>;<y>;<cost>                             | active nodes
+			...                                       /
+	\end{minted}
+\end{listing}
+\vspace{-1cm}
+"Vacant" nodes are the nodes not used in the solution. "active" nodes are the
+ones in the solution. Since all graphs consist of 200 nodes and all solutions
+are 50\% active, to find the list of nodes in the solution, simply look at the
+last 100 lines of each \verb`*.graph` file.
 
 \section{Visualizations}
 
@@ -90,10 +235,38 @@ optimization methods to allow instances defined only by distance matrices.
 \end{figure}%
 }
 
+\subsection{TSPA.csv}
+\visualization{TSPA}{msls-steepest-random}{74,178}
+\visualization{TSPA}{ils-steepest-random}{74,137}
+
+\subsection{TSPB.csv}
+\visualization{TSPB}{msls-steepest-random}{67.828}
+\visualization{TSPB}{ils-steepest-random}{67,676}
+
+\subsection{TSPC.csv}
+\visualization{TSPC}{msls-steepest-random}{48,311}
+\visualization{TSPC}{ils-steepest-random}{48,662}
+
+\subsection{TSPD.csv}
+\visualization{TSPD}{msls-steepest-random}{45,075}
+\visualization{TSPD}{ils-steepest-random}{45,016}
+
 \section{Source code}
 The source code for all the experiments and this report is hosted on GitHub: \\
 \url{https://github.com/RoyalDonkey/put-ec-tasks}
 
 \section{Conclusions}
+As expected, iterated linear search with perturbations outperformed the more
+naïve multiple-start local search. The margin isn't great, but considering
+the flexibility of ILS (tweakable perturbation function and timeout), it is a
+significantly more versatile approach, while still being very simple in its
+concept.
+
+Despite their promising results, both MSLS and ILS can't really be compared
+with the previously tested techniques, due to the many times longer execution
+time that was given to them. In the case of ILS, this could of course be
+tweaked, but capping it at 1 linear search's time would make it identical to
+just linear search. Both MSLS and ILS are really only viable as extensions to
+linear search, with the assumption that we have enough time for many runs.
 
 \end{document}
