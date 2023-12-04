@@ -7,6 +7,7 @@
 \usepackage{unicode-math}
 \usepackage[margin=2cm]{geometry}
 \usepackage{hyperref}
+\usepackage[nameinlink]{cleveref}
 \usepackage{fancyhdr, lastpage}
 \usepackage{multirow, multicol}
 \usepackage{longtable}
@@ -103,6 +104,26 @@ every successful perturbation.
 The parameters \textbf{10}, \textbf{600.0} and \textbf{1.2} were chosen
 experimentally.
 
+\subsection{Perturbation (simpler)}
+After presenting the idea of the perturbation with annealing on the labs, I
+found out that I slightly misunderstood the requirements, and, more
+importantly, I learned that a much simpler version of this algorithm works
+better:
+\begin{listing}[H]
+	\begin{minted}[highlightlines={}]{python}
+		while clock() < deadline:
+			perturb(graph);
+			lsearch_steepest(graph);
+	\end{minted}
+\end{listing}
+\vspace{-1cm}
+\noindent
+The report will generally focus on the simpler approach, as it was the one
+intended for this report, and the one that gives better results. However, I
+will still include the results of the more complicated variant. To distinguish
+between the two, the more complicated one will be referred to as
+"i$_a$ls-steepest-random" or "I$_a$LS" (subscript "a" for "annealing").
+
 \section{Results}
 
 \begin{longtable}[c]{|c|cc|}
@@ -131,7 +152,10 @@ experimentally.
 	\multirow{2}*{msls-steepest-random} & 75,048 (74,178--75,644) & 49,128 (48,311--49,620) \\
 	& 68,211 (67,828--68,622) & 45,649 (45,075--46,032) \\
 	\hline
-	\multirow{2}*{ils-steepest-random} & 74,893 (74,137--75,593) & 48,969 (48,662--49,308) \\
+	\multirow{2}*{ils-steepest-random} & 74,255 (73,754--74,535) & 48,312 (47,936--48,646) \\
+	& 67,389 (67,008--67,744) & 44,616 (44,105--45,127) \\
+	\hline
+	\multirow{2}*{i$_a$ls-steepest-random} & 74,893 (74,137--75,593) & 48,969 (48,662--49,308) \\
 	& 68,070 (67,676--68,496) & 45,505 (45,016--46,114) \\
 	\hline
 	\caption{Average, minimum and maximum scores of found solutions}
@@ -163,7 +187,6 @@ experimentally.
 	\caption{Average, minimum, maximum running times per instance (ms)}
 \end{longtable}
 
-\newpage
 \begin{longtable}[c]{|c|cc|}
 	\hline
 	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
@@ -178,10 +201,13 @@ experimentally.
 	\multirow{2}*{msls-steepest-random} & 16.339 (15.744--16.838) & 16.064 (15.530--16.725) \\
 	& 16.606 (16.074--17.191) & 16.282 (15.941--16.693) \\
 	\hline
-	\multirow{2}*{ils-steepest-random} & 16.335 (16.323--16.387) & 16.342 (16.323--16.395) \\
+	\multirow{2}*{ils-steepest-random} & 16.327 (16.323--16.337) & 16.328 (16.324--16.334) \\
+	& 16.328 (16.323--16.337) & 16.328 (16.323--16.338) \\
+	\hline
+	\multirow{2}*{i$_a$ls-steepest-random} & 16.335 (16.323--16.387) & 16.342 (16.323--16.395) \\
 	& 16.333 (16.324--16.380) & 16.342 (16.323--16.403) \\
 	\hline
-	\caption{Average, minimum, maximum running times for MSLS and ILS (s)}
+	\caption{Average, minimum, maximum running times for MSLS, ILS and I$_a$LS (s)}
 \end{longtable}
 
 \begin{longtable}[c]{|c|cc|}
@@ -195,12 +221,17 @@ experimentally.
 	& \textbf{TSPB} & \textbf{TSPD} \\
 	\hline
 	\endhead
-	\multirow{2}*{ils-steepest-random} & 1,149.3 (1,091--1,209) & 1,207.8 (1,139--1,249) \\
+	\multirow{2}*{ils-steepest-random} & 1,868.5 (1,805--1,920) & 1,663.0 (1,601--1,835) \\
+	& 1,774.8 (1,599--1,857) & 1,642.5 (1,535--1,829) \\
+	\hline
+	\multirow{2}*{i$_a$ls-steepest-random} & 1,149.3 (1,091--1,209) & 1,207.8 (1,139--1,249) \\
 	& 1,117.7 (1,056--1,178) & 1,150.0 (1,067--1,194) \\
 	\hline
 	\caption{Average, minimum, maximum number of times linear search was run}
+	\label{tab:lsearch_counts}
 \end{longtable}
 
+\newpage
 \subsection{Best solutions}
 All best solutions are available
 \href{https://github.com/RoyalDonkey/put-ec-tasks/tree/7882d44ac2786cd0d4bd691569a498d2ae1f6caa/task6/results}
@@ -223,13 +254,12 @@ ones in the solution. Since all graphs consist of 200 nodes and all solutions
 are 50\% active, to find the list of nodes in the solution, simply look at the
 last 100 lines of each \verb`*.graph` file.
 
+\newpage
 \section{Visualizations}
 
 \newcommand{\visualization}[3]{%
 \begin{figure}[H]%
-	\begin{adjustwidth}{0}{0}%
-		\includegraphics[width=\linewidth]{results/best_#2_#1.pdf}%
-	\end{adjustwidth}%
+	\includegraphics[width=\linewidth]{results/best_#2_#1.pdf}%
 	\vspace{-12mm}%
 	\caption{Best #2 solution to #1 (#3)}%
 \end{figure}%
@@ -237,36 +267,45 @@ last 100 lines of each \verb`*.graph` file.
 
 \subsection{TSPA.csv}
 \visualization{TSPA}{msls-steepest-random}{74,178}
-\visualization{TSPA}{ils-steepest-random}{74,137}
+\visualization{TSPA}{ils-steepest-random}{73,754}
 
 \subsection{TSPB.csv}
 \visualization{TSPB}{msls-steepest-random}{67.828}
-\visualization{TSPB}{ils-steepest-random}{67,676}
+\visualization{TSPB}{ils-steepest-random}{67,008}
 
 \subsection{TSPC.csv}
 \visualization{TSPC}{msls-steepest-random}{48,311}
-\visualization{TSPC}{ils-steepest-random}{48,662}
+\visualization{TSPC}{ils-steepest-random}{47,936}
 
 \subsection{TSPD.csv}
 \visualization{TSPD}{msls-steepest-random}{45,075}
-\visualization{TSPD}{ils-steepest-random}{45,016}
+\visualization{TSPD}{ils-steepest-random}{44,105}
 
 \section{Source code}
 The source code for all the experiments and this report is hosted on GitHub: \\
 \url{https://github.com/RoyalDonkey/put-ec-tasks}
 
 \section{Conclusions}
+\subsection{Original conclusions (before simpler perturbation)}
 As expected, iterated linear search with perturbations outperformed the more
 naïve multiple-start local search. The margin isn't great, but considering
-the flexibility of ILS (tweakable perturbation function and timeout), it is a
+the flexibility of I$_a$LS (tweakable perturbation function and timeout), it is a
 significantly more versatile approach, while still being very simple in its
 concept.
 
-Despite their promising results, both MSLS and ILS can't really be compared
+Despite their promising results, both MSLS and I$_a$LS can't really be compared
 with the previously tested techniques, due to the many times longer execution
-time that was given to them. In the case of ILS, this could of course be
+time that was given to them. In the case of I$_a$LS, this could of course be
 tweaked, but capping it at 1 linear search's time would make it identical to
-just linear search. Both MSLS and ILS are really only viable as extensions to
+just linear search. Both MSLS and I$_a$LS are really only viable as extensions to
 linear search, with the assumption that we have enough time for many runs.
+
+\subsection{Additional conclusions (after adding simpler perturbation)}
+Well, simpler means better a lot of the time, and this is one of those times.
+There is a very noticeable improvement in results, which can be attributed to
+the increased number of instances that are explored. No time is wasted on extra
+evaluations, comparisons, etc. This is very clearly visible on
+\Cref{tab:lsearch_counts}, where ILS manages to run linear search many more
+times.
 
 \end{document}
