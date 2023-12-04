@@ -127,25 +127,16 @@ void iterated_lsearch_steepest_perturb(struct tsp_graph *graph, perturb_func_t p
 
 		lsearch_steepest(graph_copy);
 
-		if (perturb_func != NULL) {
-			long perturb_delta = -1;
-			double anneal_temp = ANNEAL_INIT_TEMP * ANNEAL_RATIO;
-			while (perturb_delta < anneal_temp && clock() < deadline) {
-				const unsigned long score_before = tsp_nodes_evaluate(graph_copy->nodes_active, &graph_copy->dist_matrix);
-				perturb_func(graph_copy);
-				lsearch_steepest(graph_copy);
-				const unsigned long score_after = tsp_nodes_evaluate(graph_copy->nodes_active, &graph_copy->dist_matrix);
-				perturb_delta = score_after - score_before;
-				anneal_temp /= ANNEAL_RATIO;
+		while (clock() < deadline) {
+			perturb_func(graph_copy);
+			lsearch_steepest(graph_copy);
+			const unsigned long score = tsp_nodes_evaluate(graph_copy->nodes_active, &graph_copy->dist_matrix);
+			if (score < best_score) {
+				best_score = score;
+				tsp_graph_copy(graph, graph_copy);
 			}
-			/* printf("perturb delta:\t%ld [TERMINATE; temp=%.3f]\n", perturb_delta, anneal_temp); */
 		}
-
-		const unsigned long score = tsp_nodes_evaluate(graph_copy->nodes_active, &graph_copy->dist_matrix);
-		if (score < best_score) {
-			best_score = score;
-			tsp_graph_copy(graph, graph_copy);
-		}
+		/* printf("perturb delta:\t%ld [TERMINATE; temp=%.3f]\n", perturb_delta, anneal_temp); */
 	}
 	tsp_graph_destroy(graph_copy);
 }
