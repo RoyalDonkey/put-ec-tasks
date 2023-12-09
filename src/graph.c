@@ -442,18 +442,13 @@ void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx)
 void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 {
 	struct sp_stack *const vacant = graph->nodes_vacant;
-	struct sp_stack *const active = graph->nodes_active;
 
 	if (vacant->size < n_nodes) {
 		warn(("tsp_graph_activate_function: not enough vacant nodes, truncating"));
 		n_nodes = vacant->size;
 	}
 	for (size_t i = 0; i < n_nodes; i++) {
-		/* Move a random node from vacant to active */
-		const int idx = randint(0, vacant->size - 1);
-		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(vacant, idx);
-		sp_stack_qremove(vacant, idx, NULL);
-		sp_stack_push(active, &node);
+		tsp_graph_activate_node(graph, randint(0, vacant->size - 1));
 	}
 }
 
