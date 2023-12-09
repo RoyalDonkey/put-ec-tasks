@@ -438,6 +438,17 @@ void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx)
 	sp_stack_push(active, &node);
 }
 
+/* Deactivates a single node in a graph. */
+void tsp_graph_deactivate_node(struct tsp_graph *graph, size_t idx)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+
+	const struct tsp_node node = *(struct tsp_node*)sp_stack_get(active, idx);
+	sp_stack_remove(active, idx, NULL);
+	sp_stack_push(vacant, &node);
+}
+
 /* Activates `n_nodes` random nodes in graph. */
 void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 {
@@ -449,6 +460,20 @@ void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes)
 	}
 	for (size_t i = 0; i < n_nodes; i++) {
 		tsp_graph_activate_node(graph, randint(0, vacant->size - 1));
+	}
+}
+
+/* Deactivates `n_nodes` random nodes in graph. */
+void tsp_graph_deactivate_random(struct tsp_graph *graph, size_t n_nodes)
+{
+	struct sp_stack *const active = graph->nodes_active;
+
+	if (active->size < n_nodes) {
+		warn(("tsp_graph_activate_function: not enough active nodes, truncating"));
+		n_nodes = active->size;
+	}
+	for (size_t i = 0; i < n_nodes; i++) {
+		tsp_graph_deactivate_node(graph, randint(0, active->size - 1));
 	}
 }
 
