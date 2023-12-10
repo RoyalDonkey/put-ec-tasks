@@ -115,11 +115,18 @@ The repair operator is \emph{greedy cycle} from report 1.
 	\multirow{2}*{i$_a$ls-steepest-random} & 74,893 (74,137--75,593) & 48,969 (48,662--49,308) \\
 	& 68,070 (67,676--68,496) & 45,505 (45,016--46,114) \\
 	\hline
-	\multirow{2}*{lsns-random} & 73,873 (73,202--74,715) & 48,384 (47,391--49,306) \\
-	& 67,991 (66,684--69,670) & 45,644 (44,006--48,127) \\
 	\hline
-	\multirow{2}*{lsns-lsearch} & 73,523 (72,966--74,238) & 48,081 (47,434--48,968) \\
-	& 66,979 (66,659--67,512) & 44,701 (43,833--46,319) \\
+	\multirow{2}*{lsns-nolsearch-from-greedy} & 73,777 (73,061--74,941) & 48,571 (47,475--49,299) \\
+	& 68,001 (66,750--69,953) & 45,345 (44,229--46,356) \\
+	\hline
+	\multirow{2}*{lsns-nolsearch-from-lsearch} & 73,774 (73,221--74,547) & 48,391 (47,514--49,624) \\
+	& 68,217 (66,814--70,149) & 45,249 (43,954--46,160) \\
+	\hline
+	\multirow{2}*{lsns-lsearch-from-greedy} & 73,609 (\textbf{72,859}--74,404) & 48,454 (47,562--49,040) \\
+	& 66,987 (66,755--67,337) & 44,708 (43,869--46,217) \\
+	\hline
+	\multirow{2}*{lsns-lsearch-from-lsearch} & 73,607 (72,967--74,319) & 48,180 (\textbf{47,406}--49,137) \\
+	& 67,112 (\textbf{66,585}--67,673) & 44,574 (\textbf{43,884}--45,715) \\
 	\hline
 	\caption{Average, minimum and maximum scores of found solutions}
 \end{longtable}
@@ -170,10 +177,17 @@ The repair operator is \emph{greedy cycle} from report 1.
 	\multirow{2}*{i$_a$ls-steepest-random} & 16.335 (16.323--16.387) & 16.342 (16.323--16.395) \\
 	& 16.333 (16.324--16.380) & 16.342 (16.323--16.403) \\
 	\hline
-	\multirow{2}*{lsns-random} & 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
-	& 16,323 (16,323--16,324) & 16,323 (16,323--16,325) \\
 	\hline
-	\multirow{2}*{lsns-lsearch} & 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
+	\multirow{2}*{lsns-nolsearch-from-greedy} & 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
+	& 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
+	\hline
+	\multirow{2}*{lsns-nolsearch-from-lsearch} & 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
+	& 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
+	\hline
+	\multirow{2}*{lsns-lsearch-from-greedy} & 16,323 (16,323--16,324) & 16,323 (16,323--16,325) \\
+	& 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
+	\hline
+	\multirow{2}*{lsns-lsearch-from-lsearch} & 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
 	& 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
 	\hline
 	\caption{Average, minimum, maximum running times for MSLS, ILS and LSNS (s)}
@@ -211,11 +225,17 @@ The repair operator is \emph{greedy cycle} from report 1.
 	& \textbf{TSPB} & \textbf{TSPD} \\
 	\hline
 	\endhead
-	\multirow{2}*{lsns-random} & 13,525.3 (13,138--13,967) & 13,437.0 (11,166--14,089) \\
-	& 13,614.9 (13,114--14,137) & 12,115.8 (10,593--14,309) \\
+	\multirow{2}*{lsns-nolsearch-from-greedy} & 11,954.4 (9,743--13,543) & 12,885.0 (11,411--13,584) \\
+	& 12,411.5 (10,211--13,566) & 12,951.9 (11,235--13,622) \\
 	\hline
-	\multirow{2}*{lsns-lsearch} & 11,982.5 (10,518--13,251) & 12,288.5 (11,103--13,208) \\
-	& 12,207.2 (10,914--13,277) & 12,598.0 (11,463--13,370) \\
+	\multirow{2}*{lsns-nolsearch-from-lsearch} & 11,590.4 (10,348--12,739) & 12,022.5 (10,771--12,989) \\
+	& 12,050.6 (10,733--13,214) & 12,574.1 (10,904--13,416) \\
+	\hline
+	\multirow{2}*{lsns-lsearch-from-greedy} & 12,706.8 (10,960--13,302) & 11,965.6 (10,808--13,043) \\
+	& 12,096.8 (10,693--13,006) & 12,135.9 (11,252--13,114) \\
+	\hline
+	\multirow{2}*{lsns-lsearch-from-lsearch} & 12,500.5 (11,551--13,388) & 12,247.4 (9,531--13,437) \\
+	& 12,847.6 (11,511--13,437) & 12,788.4 (11,853--13,624) \\
 	\hline
 	\caption{Average, minimum, maximum number of times repair-destroy iteration was run}
 	\label{tab:lsearch_counts}
@@ -233,20 +253,28 @@ The repair operator is \emph{greedy cycle} from report 1.
 }
 
 \subsection{TSPA.csv}
-\visualization{TSPA}{lsns-random}{73,202}
-\visualization{TSPA}{lsns-lsearch}{72,966}
+\visualization{TSPA}{lsns-nolsearch-from-greedy}{73,061}
+\visualization{TSPA}{lsns-nolsearch-from-lsearch}{73,221}
+\visualization{TSPA}{lsns-lsearch-from-greedy}{72,859}
+\visualization{TSPA}{lsns-lsearch-from-lsearch}{72,967}
 
 \subsection{TSPB.csv}
-\visualization{TSPB}{lsns-random}{66,684}
-\visualization{TSPB}{lsns-lsearch}{66,659}
+\visualization{TSPB}{lsns-nolsearch-from-greedy}{66,750}
+\visualization{TSPB}{lsns-nolsearch-from-lsearch}{66,814}
+\visualization{TSPB}{lsns-lsearch-from-greedy}{66,755}
+\visualization{TSPB}{lsns-lsearch-from-lsearch}{66,585}
 
 \subsection{TSPC.csv}
-\visualization{TSPC}{lsns-random}{47,391}
-\visualization{TSPC}{lsns-lsearch}{47,434}
+\visualization{TSPC}{lsns-nolsearch-from-greedy}{47,475}
+\visualization{TSPC}{lsns-nolsearch-from-lsearch}{47,514}
+\visualization{TSPC}{lsns-lsearch-from-greedy}{47,562}
+\visualization{TSPC}{lsns-lsearch-from-lsearch}{47,406}
 
 \subsection{TSPD.csv}
-\visualization{TSPD}{lsns-random}{44,006}
-\visualization{TSPD}{lsns-lsearch}{43,833}
+\visualization{TSPD}{lsns-nolsearch-from-greedy}{44,229}
+\visualization{TSPD}{lsns-nolsearch-from-lsearch}{43,954}
+\visualization{TSPD}{lsns-lsearch-from-greedy}{43,869}
+\visualization{TSPD}{lsns-lsearch-from-lsearch}{43,884}
 
 \section{Source code}
 The source code for all the experiments and this report is hosted on GitHub: \\
