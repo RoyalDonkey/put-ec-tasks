@@ -7,7 +7,7 @@
 #include <float.h>
 
 /* Typedefs */
-typedef void (*lsearch_func_t)(struct tsp_graph *graph);
+typedef void (*search_func_t)(struct tsp_graph *graph);
 typedef void (*perturb_func_t)(struct tsp_graph *graph);
 
 /* Auxiliary struct for defining intra moves */
@@ -34,10 +34,32 @@ static const char *nodes_files[] = {
 static struct sp_stack *nodes[ARRLEN(nodes_files)];
 static size_t main_counter;
 
+void greedy_cycle(struct tsp_graph *graph, size_t target_size);
 void lsearch_steepest(struct tsp_graph *graph);
 void large_scale_lsearch_steepest(struct tsp_graph *graph, bool lsearch);
-void large_scale_from_random(struct tsp_graph *graph);
-void large_scale_from_lsearch(struct tsp_graph *graph);
+void large_scale_search(struct tsp_graph *graph);
+void large_scale_search_with_lsearch(struct tsp_graph *graph);
+
+void greedy_cycle(struct tsp_graph *graph, size_t target_size)
+{
+	struct sp_stack *vacant = graph->nodes_vacant;
+	struct sp_stack *active = graph->nodes_active;
+
+	if (active->size == 0 && target_size != 0)
+		tsp_graph_activate_random(graph, 1);
+	if (active->size == 1 && target_size != 1) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_peek(active);
+		const size_t idx = tsp_nodes_find_nn(vacant, &graph->dist_matrix, node);
+		tsp_graph_activate_node(graph, idx);
+	}
+	while (active->size < target_size) {
+		struct tsp_node node;
+		const struct tsp_move move = tsp_graph_find_nc(graph);
+		node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
+		sp_stack_remove(vacant, move.src, NULL);
+		sp_stack_insert(active, move.dest, &node);
+	}
+}
 
 void lsearch_steepest(struct tsp_graph *graph)
 {
@@ -108,7 +130,7 @@ void lsearch_steepest(struct tsp_graph *graph)
 	}
 }
 
-void large_scale_lsearch_steepest(struct tsp_graph *graph, bool lsearch)
+void large_scale_lsearch_steepest(struct tsp_graph *graph, bool use_lsearch)
 {
 	/* Compute deadline */
 	const clock_t timeout_cycles = (ITERATED_TIMEOUT_MS / 1000.0) * CLOCKS_PER_SEC;
@@ -123,7 +145,7 @@ void large_scale_lsearch_steepest(struct tsp_graph *graph, bool lsearch)
 		tsp_graph_deactivate_all(graph_copy);
 		tsp_graph_activate_random(graph_copy, target_size);
 
-		if (lsearch) {
+		if (use_lsearch) {
 			lsearch_steepest(graph_copy);
 		}
 
@@ -140,17 +162,17 @@ void large_scale_lsearch_steepest(struct tsp_graph *graph, bool lsearch)
 	tsp_graph_destroy(graph_copy);
 }
 
-void large_scale_from_random(struct tsp_graph *graph)
+void large_scale_search(struct tsp_graph *graph)
 {
 	large_scale_lsearch_steepest(graph, false);
 }
 
-void large_scale_from_lsearch(struct tsp_graph *graph)
+void large_scale_search_with_lsearch(struct tsp_graph *graph)
 {
 	large_scale_lsearch_steepest(graph, true);
 }
 
-void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
+void run_search_algorithm(const char *label, search_func_t search_algo, bool greedy_start)
 {
 	unsigned long score_min[ARRLEN(nodes_files)];
 	unsigned long score_max[ARRLEN(nodes_files)];
@@ -182,14 +204,21 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
 		const size_t target_size = nodes[i]->size / 2;
 		best_solution[i] = tsp_graph_create(nodes[i]);
 
+		/* Run search_algo from greedy solutions */
 		for (int j = 0; j < N_EXPERIMENTS; j++) {
-			tsp_graph_deactivate_all(graph);
-			tsp_graph_activate_random(graph, target_size);
+			if (greedy_start) {
+				tsp_graph_deactivate_all(graph);
+				tsp_graph_activate_random(graph, target_size);
+				lsearch_steepest(graph);
+			} else {
+				tsp_graph_deactivate_all(graph);
+				greedy_cycle(graph, target_size);
+			}
 			main_counter = 0;
 
 			clock_t time_before, time_after;
 			time_before = clock();
-			lsearch_algo(graph);
+			search_algo(graph);
 			time_after = clock();
 
 			const unsigned long score = tsp_nodes_evaluate(graph->nodes_active, &graph->dist_matrix);
@@ -259,8 +288,10 @@ int main(void)
 		nodes[i] = tsp_nodes_read(nodes_files[i]);
 	}
 
-	run_lsearch_algorithm("lsns-random", large_scale_from_random);
-	run_lsearch_algorithm("lsns-lsearch", large_scale_from_lsearch);
+	run_search_algorithm("lsns-nolsearch-from-greedy", large_scale_search, true);
+	run_search_algorithm("lsns-nolsearch-from-lsearch", large_scale_search, false);
+	run_search_algorithm("lsns-lsearch-from-greedy", large_scale_search_with_lsearch, true);
+	run_search_algorithm("lsns-lsearch-from-lsearch", large_scale_search_with_lsearch, false);
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		sp_stack_destroy(nodes[i], NULL);
