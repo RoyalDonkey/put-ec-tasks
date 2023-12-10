@@ -111,6 +111,12 @@ optimization methods to allow instances defined only by distance matrices.
 	\multirow{2}*{i$_a$ls-steepest-random} & 74,893 (74,137--75,593) & 48,969 (48,662--49,308) \\
 	& 68,070 (67,676--68,496) & 45,505 (45,016--46,114) \\
 	\hline
+	\multirow{2}*{lsns-random} & 73,873 (73,202--74,715) & 48,384 (47,391--49,306) \\
+	& 67,991 (66,684--69,670) & 45,644 (44,006--48,127) \\
+	\hline
+	\multirow{2}*{lsns-lsearch} & 73,523 (72,966--74,238) & 48,081 (47,434--48,968) \\
+	& 66,979 (66,659--67,512) & 44,701 (43,833--46,319) \\
+	\hline
 	\caption{Average, minimum and maximum scores of found solutions}
 \end{longtable}
 
@@ -160,7 +166,13 @@ optimization methods to allow instances defined only by distance matrices.
 	\multirow{2}*{i$_a$ls-steepest-random} & 16.335 (16.323--16.387) & 16.342 (16.323--16.395) \\
 	& 16.333 (16.324--16.380) & 16.342 (16.323--16.403) \\
 	\hline
-	\caption{Average, minimum, maximum running times for MSLS, ILS and I$_a$LS (s)}
+	\multirow{2}*{lsns-random} & 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
+	& 16,323 (16,323--16,324) & 16,323 (16,323--16,325) \\
+	\hline
+	\multirow{2}*{lsns-lsearch} & 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
+	& 16,323 (16,323--16,324) & 16,323 (16,323--16,324) \\
+	\hline
+	\caption{Average, minimum, maximum running times for MSLS, ILS and LSNS (s)}
 \end{longtable}
 
 \begin{longtable}[c]{|c|cc|}
@@ -181,6 +193,27 @@ optimization methods to allow instances defined only by distance matrices.
 	& 1,117.7 (1,056--1,178) & 1,150.0 (1,067--1,194) \\
 	\hline
 	\caption{Average, minimum, maximum number of times linear search was run}
+	\label{tab:lsearch_counts}
+\end{longtable}
+
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
+	\multirow{2}*{lsns-random} & 13,525.3 (13,138--13,967) & 13,437.0 (11,166--14,089) \\
+	& 13,614.9 (13,114--14,137) & 12,115.8 (10,593--14,309) \\
+	\hline
+	\multirow{2}*{lsns-lsearch} & 11,982.5 (10,518--13,251) & 12,288.5 (11,103--13,208) \\
+	& 12,207.2 (10,914--13,277) & 12,598.0 (11,463--13,370) \\
+	\hline
+	\caption{Average, minimum, maximum number of times repair-destroy iteration was run}
 	\label{tab:lsearch_counts}
 \end{longtable}
 
@@ -217,20 +250,20 @@ last 100 lines of each \verb`*.graph` file.
 }
 
 \subsection{TSPA.csv}
-\visualization{TSPA}{msls-steepest-random}{74,178}
-\visualization{TSPA}{ils-steepest-random}{73,754}
+\visualization{TSPA}{lsns-random}{73,202}
+\visualization{TSPA}{lsns-lsearch}{72,966}
 
 \subsection{TSPB.csv}
-\visualization{TSPB}{msls-steepest-random}{67.828}
-\visualization{TSPB}{ils-steepest-random}{67,008}
+\visualization{TSPB}{lsns-random}{66,684}
+\visualization{TSPB}{lsns-lsearch}{66,659}
 
 \subsection{TSPC.csv}
-\visualization{TSPC}{msls-steepest-random}{48,311}
-\visualization{TSPC}{ils-steepest-random}{47,936}
+\visualization{TSPC}{lsns-random}{47,391}
+\visualization{TSPC}{lsns-lsearch}{47,434}
 
 \subsection{TSPD.csv}
-\visualization{TSPD}{msls-steepest-random}{45,075}
-\visualization{TSPD}{ils-steepest-random}{44,105}
+\visualization{TSPD}{lsns-random}{44,006}
+\visualization{TSPD}{lsns-lsearch}{43,833}
 
 \section{Source code}
 The source code for all the experiments and this report is hosted on GitHub: \\
