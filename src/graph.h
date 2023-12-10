@@ -115,4 +115,6 @@ void tsp_delta_cache_verify_swap_nodes(const struct tsp_delta_cache *cache, cons
 void tsp_delta_cache_verify_swap_edges(const struct tsp_delta_cache *cache, const struct tsp_graph *graph);
 void tsp_graph_update_delta_cache_for_node(const struct tsp_graph *graph, struct tsp_delta_cache *cache, size_t node_idx);
 
+void tsp_graph_large_scale_destroy_repair(struct tsp_graph *graph, size_t n_nodes);
+
 #endif /* TSP_GRAPH_H */

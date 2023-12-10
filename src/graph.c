@@ -1362,3 +1362,19 @@ void tsp_graph_update_delta_cache_for_node(const struct tsp_graph *graph, struct
 		cache->swap_edges[active_id * cache->size + node_id] = swap_edges_delta;
 	}
 }
+
+void tsp_graph_large_scale_destroy_repair(struct tsp_graph *graph, size_t n_nodes)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+
+	tsp_graph_deactivate_random(graph, n_nodes);
+
+	for (size_t i = 0; i < n_nodes; i++) {
+		struct tsp_node node;
+		const struct tsp_move move = tsp_graph_find_nc(graph);
+		node = *(struct tsp_node*)sp_stack_get(vacant, move.src);
+		sp_stack_remove(vacant, move.src, NULL);
+		sp_stack_insert(active, move.dest, &node);
+	}
+}
