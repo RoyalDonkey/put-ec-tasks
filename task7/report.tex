@@ -50,7 +50,7 @@
 
 \title{Evolutionary Computation Lab VII}
 \author{Piotr Kaszubski 148283}
-\date{}
+\date{Sunday, December 10, 2023}
 
 \begin{document}
 \maketitle
@@ -76,6 +76,10 @@ then only the distance matrix (no nodes coordinates) should be accessed by
 optimization methods to allow instances defined only by distance matrices.
 
 \section{Pseudocode}
+
+\subsection{Destroy-repair operator}
+The destroy operator is implemented as removing a random 30\% of nodes in a graph. \\
+The repair operator is \emph{greedy cycle} from report 1.
 
 \section{Results}
 
@@ -217,28 +221,7 @@ optimization methods to allow instances defined only by distance matrices.
 	\label{tab:lsearch_counts}
 \end{longtable}
 
-\subsection{Best solutions}
-All best solutions are available
-\href{https://github.com/RoyalDonkey/put-ec-tasks/tree/7882d44ac2786cd0d4bd691569a498d2ae1f6caa/task6/results}
-{in the repository}, as always. I export them as \verb`*.graph` files, which
-follow a very simple text encoding:
-\begin{listing}[H]
-	\begin{minted}[highlightlines={}]{text}
-			<no_vacant_nodes>;<no_active_nodes>
-			<x>;<y>;<cost>                            \
-			<x>;<y>;<cost>                             | vacant nodes
-			...                                       /
-			<x>;<y>;<cost>                            \
-			<x>;<y>;<cost>                             | active nodes
-			...                                       /
-	\end{minted}
-\end{listing}
-\vspace{-1cm}
-"Vacant" nodes are the nodes not used in the solution. "active" nodes are the
-ones in the solution. Since all graphs consist of 200 nodes and all solutions
-are 50\% active, to find the list of nodes in the solution, simply look at the
-last 100 lines of each \verb`*.graph` file.
-
+\newpage
 \section{Visualizations}
 
 \newcommand{\visualization}[3]{%
@@ -270,5 +253,18 @@ The source code for all the experiments and this report is hosted on GitHub: \\
 \url{https://github.com/RoyalDonkey/put-ec-tasks}
 
 \section{Conclusions}
+Large scale neighborhood search was incredibly simple to implement (at least
+the variant I chose), yet it sufficed to improve the results for all instances.
+
+I've noticed that the visualizations of the graphs look a little different than in
+previous reports -- there is a tendency for the graphs to be more "compact" and
+occupy a smaller area of all nodes in the solution. Also, there don't seem to
+be any really high-cost nodes. Both of these changes are a really good sign.
+
+
+Perhaps more improvements can be found by tweaking the repair-destroy operator
+(adding some fast heuristic, like taking most costly nodes out), or by building
+off of different solutions (not random, not local search optimum → maybe
+greedy?).
 
 \end{document}
