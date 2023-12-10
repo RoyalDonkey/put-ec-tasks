@@ -22,11 +22,7 @@ struct lsearch_move {
 #define N_MULTISTART 200
 #define N_EXPERIMENTS 20
 #define ITERATED_TIMEOUT_MS 16323
-
-/* Adjustable parameters */
-#define PERTURB_MAGNITUDE 10
-#define ANNEAL_INIT_TEMP 600.0
-#define ANNEAL_RATIO 1.1
+#define DESTROY_PERC 0.3
 
 /* Global variables */
 static const char *nodes_files[] = {
@@ -36,17 +32,15 @@ static const char *nodes_files[] = {
 	"data/TSPD.csv",
 };
 static struct sp_stack *nodes[ARRLEN(nodes_files)];
-static size_t lsearch_counter;
+static size_t main_counter;
 
 void lsearch_steepest(struct tsp_graph *graph);
-void iterated_lsearch_steepest_perturb(struct tsp_graph *graph, perturb_func_t perturb_func, clock_t deadline);
-void perturb(struct tsp_graph *graph);
-void multistart_lsearch_steepest(struct tsp_graph *graph);
-void iterated_lsearch_steepest(struct tsp_graph *graph);
+void large_scale_lsearch_steepest(struct tsp_graph *graph, bool lsearch);
+void large_scale_from_random(struct tsp_graph *graph);
+void large_scale_from_lsearch(struct tsp_graph *graph);
 
 void lsearch_steepest(struct tsp_graph *graph)
 {
-	++lsearch_counter;
 	struct sp_stack *const active = graph->nodes_active;
 	struct sp_stack *const vacant = graph->nodes_vacant;
 
@@ -114,8 +108,12 @@ void lsearch_steepest(struct tsp_graph *graph)
 	}
 }
 
-void iterated_lsearch_steepest_perturb(struct tsp_graph *graph, perturb_func_t perturb_func, clock_t deadline)
+void large_scale_lsearch_steepest(struct tsp_graph *graph, bool lsearch)
 {
+	/* Compute deadline */
+	const clock_t timeout_cycles = (ITERATED_TIMEOUT_MS / 1000.0) * CLOCKS_PER_SEC;
+	const clock_t deadline = clock() + timeout_cycles;
+
 	struct tsp_graph *const graph_copy = tsp_graph_empty();
 	tsp_graph_copy(graph_copy, graph);
 	const size_t target_size = graph->dist_matrix.size / 2;
@@ -125,94 +123,31 @@ void iterated_lsearch_steepest_perturb(struct tsp_graph *graph, perturb_func_t p
 		tsp_graph_deactivate_all(graph_copy);
 		tsp_graph_activate_random(graph_copy, target_size);
 
-		lsearch_steepest(graph_copy);
+		if (lsearch) {
+			lsearch_steepest(graph_copy);
+		}
 
 		while (clock() < deadline) {
-			perturb_func(graph_copy);
-			lsearch_steepest(graph_copy);
+			main_counter++;
+			tsp_graph_large_scale_destroy_repair(graph, ROUND(DESTROY_PERC * graph->nodes_active->size));
 			const unsigned long score = tsp_nodes_evaluate(graph_copy->nodes_active, &graph_copy->dist_matrix);
 			if (score < best_score) {
 				best_score = score;
 				tsp_graph_copy(graph, graph_copy);
 			}
 		}
-		/* printf("perturb delta:\t%ld [TERMINATE; temp=%.3f]\n", perturb_delta, anneal_temp); */
 	}
 	tsp_graph_destroy(graph_copy);
 }
 
-struct lsearch_move random_move(const struct tsp_graph *graph)
+void large_scale_from_random(struct tsp_graph *graph)
 {
-	struct lsearch_move ret;
-	ret.type = randint(0, 2);
-	ret.indices.dest = randint(0, graph->nodes_active->size - 1);
-	switch (ret.type) {
-		case MOVE_TYPE_NODES:
-		case MOVE_TYPE_EDGES:
-			ret.indices.src = randint(0, graph->nodes_active->size - 1);
-		break;
-		case MOVE_TYPE_INTER:
-			ret.indices.src = randint(0, graph->nodes_vacant->size - 1);
-		break;
-		default:
-			error(("invalid move type"));
-		break;
-	}
-	return ret;
+	large_scale_lsearch_steepest(graph, false);
 }
 
-void perturb(struct tsp_graph *graph)
+void large_scale_from_lsearch(struct tsp_graph *graph)
 {
-	for (size_t i = 0; i < PERTURB_MAGNITUDE; i++) {
-		const struct lsearch_move move = random_move(graph);
-		const size_t i = move.indices.src,
-			     j = move.indices.dest;
-		switch (move.type) {
-			case MOVE_TYPE_NODES:
-				tsp_nodes_swap_nodes(graph->nodes_active, i, j);
-			break;
-			case MOVE_TYPE_EDGES:
-				tsp_nodes_swap_edges(graph->nodes_active, i, j);
-			break;
-			case MOVE_TYPE_INTER:
-				tsp_graph_inter_swap(graph, i, j);
-			break;
-			default:
-				error(("invalid move type"));
-			break;
-		}
-	}
-}
-
-void multistart_lsearch_steepest(struct tsp_graph *graph)
-{
-	struct tsp_graph *const graph_copy = tsp_graph_empty();
-	tsp_graph_copy(graph_copy, graph);
-	const size_t target_size = graph->dist_matrix.size / 2;
-
-	unsigned long best_score = ULONG_MAX;
-	for (size_t i = 0; i < N_MULTISTART; i++) {
-		/* Always start from a random solution, abandoning the initial state of "graph".
-		 * This kind of destroys the meaningfulness of the "graph" parameter, but
-		 * since steepest search is deterministic, there's no point in keeping "graph". */
-		tsp_graph_deactivate_all(graph_copy);
-		tsp_graph_activate_random(graph_copy, target_size);
-
-		lsearch_steepest(graph_copy);
-		const unsigned long score = tsp_nodes_evaluate(graph_copy->nodes_active, &graph_copy->dist_matrix);
-		if (score < best_score) {
-			best_score = score;
-			tsp_graph_copy(graph, graph_copy);
-		}
-	}
-	tsp_graph_destroy(graph_copy);
-}
-
-void iterated_lsearch_steepest(struct tsp_graph *graph)
-{
-	const clock_t time_before = clock();
-	const clock_t timeout_cycles = (ITERATED_TIMEOUT_MS / 1000.0) * CLOCKS_PER_SEC;
-	iterated_lsearch_steepest_perturb(graph, perturb, time_before + timeout_cycles);
+	large_scale_lsearch_steepest(graph, true);
 }
 
 void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
@@ -223,9 +158,9 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
 	double time_min[ARRLEN(nodes_files)];
 	double time_max[ARRLEN(nodes_files)];
 	double time_sum[ARRLEN(nodes_files)];
-	size_t lsearch_runs_min[ARRLEN(nodes_files)];
-	size_t lsearch_runs_max[ARRLEN(nodes_files)];
-	double lsearch_runs_sum[ARRLEN(nodes_files)];
+	size_t main_runs_min[ARRLEN(nodes_files)];
+	size_t main_runs_max[ARRLEN(nodes_files)];
+	double main_runs_sum[ARRLEN(nodes_files)];
 	struct tsp_graph *best_solution[ARRLEN(nodes_files)];
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
@@ -235,9 +170,9 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
 		time_min[i] = DBL_MAX;
 		time_max[i] = 0.0;
 		time_sum[i] = 0.0;
-		lsearch_runs_min[i] = SIZE_MAX;
-		lsearch_runs_max[i] = 0;
-		lsearch_runs_sum[i] = 0.0;
+		main_runs_min[i] = SIZE_MAX;
+		main_runs_max[i] = 0;
+		main_runs_sum[i] = 0.0;
 	}
 
 	random_seed(0);
@@ -250,7 +185,7 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
 		for (int j = 0; j < N_EXPERIMENTS; j++) {
 			tsp_graph_deactivate_all(graph);
 			tsp_graph_activate_random(graph, target_size);
-			lsearch_counter = 0;
+			main_counter = 0;
 
 			clock_t time_before, time_after;
 			time_before = clock();
@@ -262,15 +197,15 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
 			score_min[i] = MIN(score, score_min[i]);
 			time_min[i] = MIN(time, time_min[i]);
 			time_max[i] = MAX(time, time_max[i]);
-			lsearch_runs_min[i] = MIN(lsearch_counter, lsearch_runs_min[i]);
-			lsearch_runs_max[i] = MAX(lsearch_counter, lsearch_runs_max[i]);
+			main_runs_min[i] = MIN(main_counter, main_runs_min[i]);
+			main_runs_max[i] = MAX(main_counter, main_runs_max[i]);
 			if (score > score_max[i]) {
 				score_max[i] = score;
 				tsp_graph_copy(best_solution[i], graph);
 			}
 			score_sum[i] += score;
 			time_sum[i] += time;
-			lsearch_runs_sum[i] += lsearch_counter;
+			main_runs_sum[i] += main_counter;
 		}
 
 		tsp_graph_destroy(graph);
@@ -305,14 +240,14 @@ void run_lsearch_algorithm(const char *label, lsearch_func_t lsearch_algo)
 		);
 	}
 
-	printf("number of lsearch runs:\n");
+	printf("number of destroy-repair loop iterations:\n");
 	printf("%-20s\t%8s\t%8s\t%8s\n", "file", "min", "avg", "max");
 	for (size_t i = 0; i < ARRLEN(best_solution); i++) {  /* NOLINT(bugprone-sizeof-expression) */
 		printf("%-20s\t%8zu\t%8.1f\t%8zu\n",
 			nodes_files[i],
-			lsearch_runs_min[i],
-			lsearch_runs_sum[i] / N_EXPERIMENTS,
-			lsearch_runs_max[i]
+			main_runs_min[i],
+			main_runs_sum[i] / N_EXPERIMENTS,
+			main_runs_max[i]
 		);
 	}
 }
@@ -324,8 +259,8 @@ int main(void)
 		nodes[i] = tsp_nodes_read(nodes_files[i]);
 	}
 
-	/* run_lsearch_algorithm("msls-steepest-random", multistart_lsearch_steepest); */
-	/* run_lsearch_algorithm("ils-steepest-random", iterated_lsearch_steepest); */
+	run_lsearch_algorithm("lsns-random", large_scale_from_random);
+	run_lsearch_algorithm("lsns-lsearch", large_scale_from_lsearch);
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		sp_stack_destroy(nodes[i], NULL);
