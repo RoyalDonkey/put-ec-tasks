@@ -117,4 +117,7 @@ void tsp_graph_update_delta_cache_for_node(const struct tsp_graph *graph, struct
 
 void tsp_graph_large_scale_destroy_repair(struct tsp_graph *graph, size_t n_nodes);
 
+size_t tsp_nodes_compute_similarity_nodes(const struct sp_stack *nodes1, const struct sp_stack *nodes2);
+size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2);
+
 #endif /* TSP_GRAPH_H */

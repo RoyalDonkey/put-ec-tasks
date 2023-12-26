@@ -1378,3 +1378,15 @@ void tsp_graph_large_scale_destroy_repair(struct tsp_graph *graph, size_t n_node
 		sp_stack_insert(active, move.dest, &node);
 	}
 }
+
+size_t tsp_nodes_compute_similarity_nodes(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
+{
+	/* TODO */
+	return 0;
+}
+
+size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
+{
+	/* TODO */
+	return 0;
+}
