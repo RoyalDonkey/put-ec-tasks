@@ -12,6 +12,7 @@ SRCS := $(foreach dir, $(SRCDIRS), $(wildcard $(dir)/*.c))
 OBJS := $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SRCS:.c=.o))
 LIBTSP = libtsp.a
 LIBSTAPLE = libstaple/libstaple.a
+LIBGNUPLOT_I = gnuplot_i/gnuplot_i.o
 TASKS = task1 task2 task3 task4 task5 task6 task7 task8
 
 .PHONY: directories all clean debug profile fast
@@ -33,11 +34,15 @@ $(LIBTSP): $(LIBSTAPLE) $(OBJS)
 $(LIBSTAPLE):
 	@$(MAKE) -C libstaple ABORT=1
 
+$(LIBGNUPLOT_I):
+	$(CC) -c -std=gnu99 -O2 -o gnuplot_i/gnuplot_i.o gnuplot_i/gnuplot_i.c
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c $(CFLAGS) $^ -o $@
 
 clean:
 	$(RM) -- $(LIBTSP) $(OBJS)
+	$(RM) -- gnuplot_i/gnuplot_i.o
 	@for t in $(TASKS); do $(MAKE) -C "$$t" clean; done
 
 debug: CFLAGS += -g -Og -ftrapv
@@ -50,5 +55,5 @@ profile: clean all
 fast: CFLAGS += -Wno-error -DNDEBUG
 fast: clean all
 
-task%: $(LIBTSP)
+task%: $(LIBTSP) $(LIBGNUPLOT_I)
 	@$(MAKE) -C $@

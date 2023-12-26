@@ -22,7 +22,7 @@ directories:
 	@mkdir -p $(SRCDIRS) $(OBJDIRS)
 
 $(TARGET): $(OBJS)
-	$(LINKER) $(OBJS) $(LDFLAGS) -o $(TARGET)
+	$(LINKER) ../gnuplot_i/gnuplot_i.o $(OBJS) $(LDFLAGS) -o $(TARGET)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c $(CFLAGS) $^ -o $@

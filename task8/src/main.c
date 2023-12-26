@@ -1,4 +1,5 @@
 #include "../../src/tsp.h"
+#include "../../gnuplot_i/gnuplot_i.h"
 #include <limits.h>
 #include <libgen.h>
 #include <string.h>
