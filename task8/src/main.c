@@ -10,6 +10,8 @@
 /* Typedefs */
 typedef size_t (*sim_func_t)(const struct sp_stack *nodes1, const struct sp_stack *nodes2);
 
+#define NO_ITERS 1000
+
 /* Auxiliary struct for defining intra moves */
 #define MOVE_TYPE_NODES 0  /* intra-route node swap */
 #define MOVE_TYPE_EDGES 1  /* intra-route edge swap */
@@ -122,42 +124,131 @@ void lsearch_greedy(struct tsp_graph *graph)
 	sp_stack_destroy(all_moves, NULL);
 }
 
-void plot_similarities(enum instance instance, sim_func_t similarity, const struct sp_stack *reference_solution)
+/* Generate a single plot.
+ * Arguments:
+ * - `data_fpath`: output filename (csv)
+ * - `instance`: the type of instance (`INST_TSPA`, `INST_TSPB`, ...)
+ * - `similarity`: the similarity function to use
+ * - `reference_solution`: a solution to compare to, or `NULL` to compare with the average of NO_ITERS instances.
+ */
+void compute_similarities(const char *data_fpath, enum instance instance, sim_func_t similarity, const struct sp_stack *reference_solution)
 {
 	/* Initialization */
-	struct sp_stack *const nodes = tsp_nodes_read(nodes_files[instance]);
-	struct tsp_graph **const graphs = malloc_or_die(1000 * sizeof(struct tsp_graph*));
-	size_t *const sims_to_ref = malloc_or_die(1000 * sizeof(size_t));
-	size_t *const sims_to_others = malloc_or_die(1000 * sizeof(size_t));
-	const size_t target_size = nodes->size / 2;
+	struct tsp_graph **const graphs = malloc_or_die(NO_ITERS * sizeof(struct tsp_graph*));
+	unsigned long *const graph_scores = malloc_or_die(NO_ITERS * sizeof(unsigned long));
+	size_t *const sims = malloc_or_die(NO_ITERS * sizeof(size_t));
+	const size_t target_size = nodes[instance]->size / 2;
 
-	/* Generate 1000 local optima solutions and compute their similarities to the reference solution */
-	for (size_t i = 0; i < 1000; i++) {
-		graphs[i] = tsp_graph_create(nodes);
+	/* Generate NO_ITERS local optima solutions and compute their similarities to the reference solution */
+	for (size_t i = 0; i < NO_ITERS; i++) {
+		fprintf(stderr, "\r   Generating solutions...  %3zu.%zu%%", i * 100 / NO_ITERS, (i * 1000 / NO_ITERS) % 10);
+		graphs[i] = tsp_graph_create(nodes[instance]);
 		tsp_graph_activate_random(graphs[i], target_size);
 		lsearch_greedy(graphs[i]);
-		
-		sims_to_ref[i] = similarity(graphs[i]->nodes_active, reference_solution);
+		graph_scores[i] = tsp_nodes_evaluate(graphs[i]->nodes_active, &graphs[i]->dist_matrix);
+
+		if (reference_solution != NULL) {
+			sims[i] = similarity(graphs[i]->nodes_active, reference_solution);
+		}
+	}
+	fprintf(stderr, "\r   Generating solutions...  100%%  \n");
+
+	if (reference_solution == NULL) {
+		/* Compute each solution's average similarity to all other solutions */
+		for (size_t i = 0; i < NO_ITERS; i++) {
+			fprintf(stderr, "\r   Computing average similarities...  %3zu.%zu%%", i / 10, i % 10);
+			double sum = 0.0;
+			for (size_t j = 0; j < NO_ITERS; j++) {
+				if (j == i) {
+					continue;
+				}
+				sum += similarity(graphs[i]->nodes_active, graphs[j]->nodes_active);
+			}
+			sims[i] = ROUND(sum / NO_ITERS);
+		}
+		fprintf(stderr, "\r   Computing average similarities...  100%%  \n");
 	}
 
-	/* Compute each solution's average similarity to all other solutions */
-	for (size_t i = 0; i < 1000; i++) {
-		double sum = 0.0;
-		for (size_t j = 0; j < 1000; j++) {
-			if (j == i) {
-				continue;
-			}
-			sum += similarity(graphs[i]->nodes_active, graphs[j]->nodes_active);
-		}
-		sims_to_others[i] = ROUND(sum / 1000);
+	/* Write out to file */
+	FILE *fout = fopen(data_fpath, "w");
+	if (fout == NULL) {
+		perror("Failed to open file for writing");
+		return;
 	}
+	for (size_t i = 0; i < NO_ITERS; i++) {
+		fprintf(fout, "%lu,%zu\n", graph_scores[i], sims[i]);
+	}
+	fclose(fout);
 
 	/* Cleanup */
-	for (size_t i = 0; i < 1000; i++) {
+	for (size_t i = 0; i < NO_ITERS; i++) {
 		tsp_graph_destroy(graphs[i]);
 	}
-	free(sims_to_ref);
-	sp_stack_destroy(nodes, NULL);
+	free(graphs);
+	free(graph_scores);
+	free(sims);
+}
+
+void plot_similarities(const char *data_fpath, const char *plot_fpath)
+{
+	fprintf(stderr, "   Plotting results... ");
+	gnuplot_ctrl *handle = gnuplot_init();
+	gnuplot_cmd(handle, "set datafile separator \",\"");
+	gnuplot_cmd(handle, "set terminal pdf");
+	gnuplot_cmd(handle, "unset key");
+	gnuplot_cmd(handle, "set ytics 1");
+	gnuplot_cmd(handle, "set grid");
+	gnuplot_cmd(handle, "set style fill solid noborder");
+	gnuplot_cmd(handle, "set jitter vertical spread 0.3");
+	gnuplot_cmd(handle, "set output \"%s\"", plot_fpath);
+	gnuplot_cmd(handle, "plot \"%s\" u 1:2 lc rgb 0xA02222FF pt 7 ps 0.5", data_fpath, data_fpath);
+	gnuplot_close(handle);
+	fprintf(stderr, "done.\n");
+}
+
+void run(enum instance instance, sim_func_t similarity, const struct sp_stack *reference_solution)
+{
+	char data_fpath[64];
+	char plot_fpath[64];
+
+	fprintf(stderr, "-> ");
+	switch (instance) {
+		case INST_TSPA: fprintf(stderr, "TSPA, "); break;
+		case INST_TSPB: fprintf(stderr, "TSPB, "); break;
+		case INST_TSPC: fprintf(stderr, "TSPC, "); break;
+		case INST_TSPD: fprintf(stderr, "TSPD, "); break;
+	}
+	if (similarity == tsp_nodes_compute_similarity_nodes) {
+		fprintf(stderr, "sim=nodes, ");
+	} else if (similarity == tsp_nodes_compute_similarity_edges) {
+		fprintf(stderr, "sim=edges, ");
+	}
+	switch ((int)(reference_solution != NULL)) {
+		case 1: fprintf(stderr, "ref=best\n"); break;
+		case 0: fprintf(stderr, "ref=avg\n"); break;
+	}
+
+	sprintf(data_fpath, "results/TSP%c_%s_%s.csv",
+		'A' + instance,
+		similarity == tsp_nodes_compute_similarity_nodes ? "nodes" : "edges",
+		reference_solution != NULL ? "best" : "avg"
+	);
+	sprintf(plot_fpath, "results/TSP%c_%s_%s.pdf",
+		'A' + instance,
+		similarity == tsp_nodes_compute_similarity_nodes ? "nodes" : "edges",
+		reference_solution != NULL ? "best" : "avg"
+	);
+
+	/* Ensure data file exists */
+	FILE *const data_file = fopen(data_fpath, "r");
+	if (data_file == NULL) {
+		compute_similarities(data_fpath, instance, similarity, reference_solution);
+	} else {
+		fprintf(stderr, "   Found data at %s\n", data_fpath);
+		fclose(data_file);
+	}
+
+	plot_similarities(data_fpath, plot_fpath);
 }
 
 
@@ -169,25 +260,25 @@ int main(void)
 		starting_graphs[i] = tsp_graph_import(best_graphs[i]);
 	}
 
-	plot_similarities(INST_TSPA, tsp_nodes_compute_similarity_nodes, starting_graphs[INST_TSPA]->nodes_active);
-	plot_similarities(INST_TSPB, tsp_nodes_compute_similarity_nodes, starting_graphs[INST_TSPB]->nodes_active);
-	plot_similarities(INST_TSPC, tsp_nodes_compute_similarity_nodes, starting_graphs[INST_TSPC]->nodes_active);
-	plot_similarities(INST_TSPD, tsp_nodes_compute_similarity_nodes, starting_graphs[INST_TSPD]->nodes_active);
+	run(INST_TSPA, tsp_nodes_compute_similarity_nodes, starting_graphs[INST_TSPA]->nodes_active);
+	run(INST_TSPB, tsp_nodes_compute_similarity_nodes, starting_graphs[INST_TSPB]->nodes_active);
+	run(INST_TSPC, tsp_nodes_compute_similarity_nodes, starting_graphs[INST_TSPC]->nodes_active);
+	run(INST_TSPD, tsp_nodes_compute_similarity_nodes, starting_graphs[INST_TSPD]->nodes_active);
 
-	plot_similarities(INST_TSPA, tsp_nodes_compute_similarity_edges, starting_graphs[INST_TSPA]->nodes_active);
-	plot_similarities(INST_TSPB, tsp_nodes_compute_similarity_edges, starting_graphs[INST_TSPB]->nodes_active);
-	plot_similarities(INST_TSPC, tsp_nodes_compute_similarity_edges, starting_graphs[INST_TSPC]->nodes_active);
-	plot_similarities(INST_TSPD, tsp_nodes_compute_similarity_edges, starting_graphs[INST_TSPD]->nodes_active);
+	run(INST_TSPA, tsp_nodes_compute_similarity_edges, starting_graphs[INST_TSPA]->nodes_active);
+	run(INST_TSPB, tsp_nodes_compute_similarity_edges, starting_graphs[INST_TSPB]->nodes_active);
+	run(INST_TSPC, tsp_nodes_compute_similarity_edges, starting_graphs[INST_TSPC]->nodes_active);
+	run(INST_TSPD, tsp_nodes_compute_similarity_edges, starting_graphs[INST_TSPD]->nodes_active);
 
-	plot_similarities(INST_TSPA, tsp_nodes_compute_similarity_nodes, NULL);
-	plot_similarities(INST_TSPB, tsp_nodes_compute_similarity_nodes, NULL);
-	plot_similarities(INST_TSPC, tsp_nodes_compute_similarity_nodes, NULL);
-	plot_similarities(INST_TSPD, tsp_nodes_compute_similarity_nodes, NULL);
+	run(INST_TSPA, tsp_nodes_compute_similarity_nodes, NULL);
+	run(INST_TSPB, tsp_nodes_compute_similarity_nodes, NULL);
+	run(INST_TSPC, tsp_nodes_compute_similarity_nodes, NULL);
+	run(INST_TSPD, tsp_nodes_compute_similarity_nodes, NULL);
 
-	plot_similarities(INST_TSPA, tsp_nodes_compute_similarity_edges, NULL);
-	plot_similarities(INST_TSPB, tsp_nodes_compute_similarity_edges, NULL);
-	plot_similarities(INST_TSPC, tsp_nodes_compute_similarity_edges, NULL);
-	plot_similarities(INST_TSPD, tsp_nodes_compute_similarity_edges, NULL);
+	run(INST_TSPA, tsp_nodes_compute_similarity_edges, NULL);
+	run(INST_TSPB, tsp_nodes_compute_similarity_edges, NULL);
+	run(INST_TSPC, tsp_nodes_compute_similarity_edges, NULL);
+	run(INST_TSPD, tsp_nodes_compute_similarity_edges, NULL);
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		sp_stack_destroy(nodes[i], NULL);
