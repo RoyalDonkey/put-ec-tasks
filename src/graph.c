@@ -24,6 +24,7 @@ struct id_val_pair {
 
 /* Forward declarations */
 int _print_node(const void *ptr);
+size_t _pack_into_size_t(size_t num1, size_t num2);
 
 
 inline unsigned long mdist(size_t id1, size_t id2, const struct tsp_dist_matrix *matrix)
@@ -1396,8 +1397,36 @@ size_t tsp_nodes_compute_similarity_nodes(const struct sp_stack *nodes1, const s
 	return sim;
 }
 
+/* Packs 2 numbers into a `size_t` value. Both numbers must not exceed 1/2 of `size_t` width. */
+size_t _pack_into_size_t(size_t num1, size_t num2)
+{
+	const size_t size_t_width = sizeof(size_t) * CHAR_BIT;
+	assert(num1 == (num1 << (size_t_width / 2)) >> (size_t_width / 2));
+	assert(num2 == (num2 << (size_t_width / 2)) >> (size_t_width / 2));
+	return ((num1) << (size_t_width / 2)) | num2;
+}
+
 size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
 {
-	/* TODO */
-	return 0;
+	struct hashmap *const hm = hashmap_create(256);
+	size_t sim = 0;
+
+	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(nodes1, nodes1->size - 1);
+	for (size_t i = 0; i < nodes1->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes1, i);
+		const size_t edge = _pack_into_size_t(MIN(prev_node.id, node.id), MAX(prev_node.id, node.id));
+		hashmap_set(hm, edge, 1);
+		prev_node = node;
+	}
+
+	prev_node = *(struct tsp_node*)sp_stack_get(nodes2, nodes2->size - 1);
+	for (size_t i = 0; i < nodes2->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes2, i);
+		const size_t edge = _pack_into_size_t(MIN(prev_node.id, node.id), MAX(prev_node.id, node.id));
+		sim += hashmap_contains_key(hm, edge);
+		prev_node = node;
+	}
+
+	hashmap_destroy(hm);
+	return sim;
 }
