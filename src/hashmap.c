@@ -4,15 +4,11 @@
 #define BUCKET_INIT_SIZE 16
 
 struct hashmap_pair {
-	struct {
-		int x1;
-		int y1;
-		int x2;
-		int y2;
-	} key;
+	size_t key;
 	int value;
 };
 
+size_t hashmap_hash(size_t key);
 
 struct hashmap *hashmap_create(size_t n_buckets)
 {
@@ -38,64 +34,61 @@ void hashmap_copy(struct hashmap *dest, struct hashmap *src)
 	dest->n_buckets = src->n_buckets;
 }
 
-bool hashmap_contains_key(struct hashmap *hashmap, int x1, int y1, int x2, int y2)
+bool hashmap_contains_key(struct hashmap *hashmap, size_t key)
 {
-	size_t idx = hashmap_hash(x1, y1, x2, y2) % hashmap->n_buckets;
+	size_t idx = hashmap_hash(key) % hashmap->n_buckets;
 	const struct sp_stack *const bucket = hashmap->buckets[idx];
 	for (size_t i = 0; i < bucket->size; i++) {
 		struct hashmap_pair pair = *(struct hashmap_pair*)sp_stack_get(bucket, i);
-		if (pair.key.x1 == x1 && pair.key.y1 == y1 && pair.key.x2 == x2 && pair.key.y2 == y2)
+		if (pair.key == key)
 			return true;
 	}
 	return false;
 }
 
-int hashmap_get(struct hashmap *hashmap, int x1, int y1, int x2, int y2)
+int hashmap_get(struct hashmap *hashmap, size_t key)
 {
-	size_t idx = hashmap_hash(x1, y1, x2, y2) % hashmap->n_buckets;
+	size_t idx = hashmap_hash(key) % hashmap->n_buckets;
 	const struct sp_stack *const bucket = hashmap->buckets[idx];
 	for (size_t i = 0; i < bucket->size; i++) {
 		struct hashmap_pair pair = *(struct hashmap_pair*)sp_stack_get(bucket, i);
-		if (pair.key.x1 == x1 && pair.key.y1 == y1 && pair.key.x2 == x2 && pair.key.y2 == y2)
+		if (pair.key == key)
 			return pair.value;
 	}
-	error(("key not found: { (%d;%d), (%d;%d) }", x1, y1, x2, y2));
+	error(("key not found: { (%d;%d), (%d;%d) }", key));
 }
 
-void hashmap_set(struct hashmap *hashmap, int x1, int y1, int x2, int y2, int value)
+void hashmap_set(struct hashmap *hashmap, size_t key, int value)
 {
-	size_t idx = hashmap_hash(x1, y1, x2, y2) % hashmap->n_buckets;
+	size_t idx = hashmap_hash(key) % hashmap->n_buckets;
 	struct sp_stack *const bucket = hashmap->buckets[idx];
 
 	for (size_t i = 0; i < bucket->size; i++) {
 		struct hashmap_pair *pair = sp_stack_get(bucket, i);
-		if (pair->key.x1 == x1 && pair->key.y1 == y1 && pair->key.x2 == x2 && pair->key.y2 == y2) {
+		if (pair->key == key) {
 			pair->value = value;
 			return;
 		}
 	}
 
 	struct hashmap_pair pair;
-	pair.key.x1 = x1;
-	pair.key.y1 = y1;
-	pair.key.x2 = x2;
-	pair.key.y2 = y2;
+	pair.key = key;
 	pair.value = value;
 	sp_stack_push(bucket, &pair);
 }
 
-int hashmap_unset(struct hashmap *hashmap, int x1, int y1, int x2, int y2)
+int hashmap_unset(struct hashmap *hashmap, size_t key)
 {
-	size_t idx = hashmap_hash(x1, y1, x2, y2) % hashmap->n_buckets;
+	size_t idx = hashmap_hash(key) % hashmap->n_buckets;
 	struct sp_stack *const bucket = hashmap->buckets[idx];
 	for (size_t i = 0; i < bucket->size; i++) {
 		struct hashmap_pair pair = *(struct hashmap_pair*)sp_stack_get(bucket, i);
-		if (pair.key.x1 == x1 && pair.key.y1 == y1 && pair.key.x2 == x2 && pair.key.y2 == y2) {
+		if (pair.key == key) {
 			sp_stack_qremove(bucket, i, NULL);
 			return pair.value;
 		}
 	}
-	error(("key not found: { (%d;%d), (%d;%d) }", x1, y1, x2, y2));
+	error(("key not found: { (%d;%d), (%d;%d) }", key));
 }
 
 void hashmap_destroy(struct hashmap *hashmap)
@@ -106,17 +99,17 @@ void hashmap_destroy(struct hashmap *hashmap)
 	free(hashmap);
 }
 
-size_t hashmap_hash(int x1, int y1, int x2, int y2)
+size_t hashmap_hash(size_t key)
 {
 	/* Adapted from the djb2 hash function. It was first reported
 	 * by Dan Bernstein.
 	 * Source: https://www.sparknotes.com/cs/searching/hashtables/section2/
 	*/
 	size_t ret = 5381;
-	ret = ((ret << 5) + ret) + x1;
-	ret = ((ret << 5) + ret) + y1;
-	ret = ((ret << 5) + ret) + x2;
-	ret = ((ret << 5) + ret) + y2;
+	ret = ((ret << 5) + ret) + key;
+	ret = ((ret << 5) + ret) + key;
+	ret = ((ret << 5) + ret) + key;
+	ret = ((ret << 5) + ret) + key;
 	return ret * 33;
 }
 
