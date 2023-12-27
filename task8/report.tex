@@ -50,41 +50,75 @@
 
 \title{Evolutionary Computation Lab VIII}
 \author{Piotr Kaszubski 148283}
-\date{}
+\date{Wednesday, December 27, 2023}
 
 \begin{document}
 \maketitle
 \tableofcontents
 \newpage
 
-\section{Problem description}
-We are given three columns of integers with a row for each node. The first two
-columns contain \verb`x` and \verb`y` coordinates of the node positions in a
-plane. The third column contains node costs.
+\section{Implementation details} \label{sec:impl_details}
+For the "best" similarity version, I used the best instances I ever
+obtained for each of the TSPA, TSPB, \ldots solutions. All of them
+came from the previous report:
+\begin{description}
+	\item [TSPA] -- large-scale neighborhood search from greedy, with steepest
+		local search after repair-destroy,
+	\item [TSPB, TSPC, TSPD] -- large-scale neighborhood search from a random
+		solution developed with steepest local search, with steepest local
+		search after repair-destroy.
+\end{description}
 
-\begin{enumerate}
-	\item Select exactly 50\% of the nodes (if the number of nodes is odd we
-		round the number of nodes to be selected up).
-	\item Form a Hamiltonian cycle (closed path) through this set of nodes such
-		that the sum of the total length of the path plus the total cost of the
-		selected nodes is minimized. The distances between nodes are calculated
-		as Euclidean distances rounded mathematically to integer values.
-\end{enumerate}
+As you will see, these best solutions share very few edges with the ones obtained
+from random solutions after a single round of greedy local search. Since there was
+a lot of overlap on certain y-values, I added jitter to all plots.
 
-The distance matrix should be calculated just after reading an instance and
-then only the distance matrix (no nodes coordinates) should be accessed by
-optimization methods to allow instances defined only by distance matrices.
-
-\section{Pseudocode}
-
-\section{Results}
-
+\newpage
 \section{Visualizations}
+\newcommand{\visualization}[3]{%
+\begin{figure}[H]%
+	\includegraphics[width=\linewidth]{results/#1_#2_#3.pdf}%
+	\vspace{-4mm}%
+	\caption{#1, #2, #3}%
+	\vspace{-4mm}%
+\end{figure}%
+}
+
+\visualization{TSPA}{edges}{best}
+\visualization{TSPB}{edges}{best}
+\visualization{TSPC}{edges}{best}
+\visualization{TSPD}{edges}{best}
+
+\visualization{TSPA}{nodes}{best}
+\visualization{TSPB}{nodes}{best}
+\visualization{TSPC}{nodes}{best}
+\visualization{TSPD}{nodes}{best}
+
+\visualization{TSPA}{edges}{avg}
+\visualization{TSPB}{edges}{avg}
+\visualization{TSPC}{edges}{avg}
+\visualization{TSPD}{edges}{avg}
+
+\visualization{TSPA}{nodes}{avg}
+\visualization{TSPB}{nodes}{avg}
+\visualization{TSPC}{nodes}{avg}
+\visualization{TSPD}{nodes}{avg}
 
 \section{Source code}
 The source code for all the experiments and this report is hosted on GitHub: \\
 \url{https://github.com/RoyalDonkey/put-ec-tasks}
 
 \section{Conclusions}
+
+There is little to no edge similarity with the best solutions, as explained in
+Section \ref{sec:impl_details}. Interestingly, TSPA and TSPC consistently get
+1-2 edges, while TSPB and TSPD almost exclusively get 0s. Node similarity with
+best solutions is random, which further solidifies that solutions made using
+different methods have almost nothing in common.
+
+Edge similarity with average solutions displays a very nice trend -- solutions
+which are better than average tend to be more similar to each other. This means
+that the same method applied 1000 times on average finds similar edges. The
+same occurs for nodes.
 
 \end{document}
