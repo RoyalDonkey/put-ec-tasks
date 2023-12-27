@@ -205,6 +205,7 @@ void tsp_graph_destroy(struct tsp_graph *graph)
 	sp_stack_destroy(graph->nodes_active, NULL);
 	sp_stack_destroy(graph->nodes_vacant, NULL);
 	free(graph->dist_matrix.dist);
+	free(graph->dist_matrix.nodes);
 	free(graph);
 }
 
