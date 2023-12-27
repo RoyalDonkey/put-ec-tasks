@@ -6,6 +6,7 @@
 
 - [GCC](https://gcc.gnu.org/) (`-std=gnu99`)
 - [`neato`](https://graphviz.org/docs/layouts/neato/) command
+- [`gnuplot`](http://www.gnuplot.info/) command
 
 To build, run
 ```sh
