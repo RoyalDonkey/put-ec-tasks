@@ -2,6 +2,7 @@
 #include "helpers.h"
 #include "../libstaple/src/staple.h"
 #include "heap.h"
+#include "hashmap.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -1381,8 +1382,18 @@ void tsp_graph_large_scale_destroy_repair(struct tsp_graph *graph, size_t n_node
 
 size_t tsp_nodes_compute_similarity_nodes(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
 {
-	/* TODO */
-	return 0;
+	struct hashmap *const hm = hashmap_create(256);
+	size_t sim = 0;
+	for (size_t i = 0; i < nodes1->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes1, i);
+		hashmap_set(hm, node.id, 1);
+	}
+	for (size_t i = 0; i < nodes2->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes2, i);
+		sim += hashmap_contains_key(hm, node.id);
+	}
+	hashmap_destroy(hm);
+	return sim;
 }
 
 size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
