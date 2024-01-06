@@ -120,4 +120,7 @@ void tsp_graph_large_scale_destroy_repair(struct tsp_graph *graph, size_t n_node
 size_t tsp_nodes_compute_similarity_nodes(const struct sp_stack *nodes1, const struct sp_stack *nodes2);
 size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2);
 
+void tsp_graph_init_offspring_common_plus_random(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child);
+void tsp_graph_init_offspring_common_plus_lns_repair(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child);
+
 #endif /* TSP_GRAPH_H */

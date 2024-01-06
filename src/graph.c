@@ -1431,3 +1431,13 @@ size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const s
 	hashmap_destroy(hm);
 	return sim;
 }
+
+void tsp_graph_init_offspring_common_plus_random(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child)
+{
+	/* TODO */
+}
+
+void tsp_graph_init_offspring_common_plus_lns_repair(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child)
+{
+	/* TODO */
+}
