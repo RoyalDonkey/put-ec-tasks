@@ -3,11 +3,6 @@
 
 #define BUCKET_INIT_SIZE 16
 
-struct hashmap_pair {
-	size_t key;
-	int value;
-};
-
 size_t hashmap_hash(size_t key);
 
 struct hashmap *hashmap_create(size_t n_buckets)
@@ -56,6 +51,16 @@ int hashmap_get(struct hashmap *hashmap, size_t key)
 			return pair.value;
 	}
 	error(("key not found: { (%d;%d), (%d;%d) }", key));
+}
+
+struct hashmap_pair hashmap_pop_next(struct hashmap *hashmap)
+{
+	if (hashmap->buckets[0]->size == 0) {
+		error(("hashmap is empty"));
+	}
+	const struct hashmap_pair ret = *(struct hashmap_pair*)sp_stack_peek(hashmap->buckets[0]);
+	sp_stack_popi(hashmap->buckets[0]);
+	return ret;
 }
 
 void hashmap_set(struct hashmap *hashmap, size_t key, int value)
