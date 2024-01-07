@@ -1388,7 +1388,7 @@ size_t tsp_nodes_compute_similarity_nodes(const struct sp_stack *nodes1, const s
 	size_t sim = 0;
 	for (size_t i = 0; i < nodes1->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes1, i);
-		hashmap_set(hm, node.id, 1);
+		hashmap_set(hm, node.id, true);
 	}
 	for (size_t i = 0; i < nodes2->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes2, i);
@@ -1416,7 +1416,7 @@ size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const s
 	for (size_t i = 0; i < nodes1->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes1, i);
 		const size_t edge = _pack_into_size_t(MIN(prev_node.id, node.id), MAX(prev_node.id, node.id));
-		hashmap_set(hm, edge, 1);
+		hashmap_set(hm, edge, true);
 		prev_node = node;
 	}
 
