@@ -36,7 +36,7 @@ void hashmap_copy(struct hashmap *dest, struct hashmap *src)
 
 bool hashmap_contains_key(struct hashmap *hashmap, size_t key)
 {
-	size_t idx = hashmap_hash(key) % hashmap->n_buckets;
+	const size_t idx = hashmap_hash(key) % hashmap->n_buckets;
 	const struct sp_stack *const bucket = hashmap->buckets[idx];
 	for (size_t i = 0; i < bucket->size; i++) {
 		struct hashmap_pair pair = *(struct hashmap_pair*)sp_stack_get(bucket, i);
@@ -48,7 +48,7 @@ bool hashmap_contains_key(struct hashmap *hashmap, size_t key)
 
 int hashmap_get(struct hashmap *hashmap, size_t key)
 {
-	size_t idx = hashmap_hash(key) % hashmap->n_buckets;
+	const size_t idx = hashmap_hash(key) % hashmap->n_buckets;
 	const struct sp_stack *const bucket = hashmap->buckets[idx];
 	for (size_t i = 0; i < bucket->size; i++) {
 		struct hashmap_pair pair = *(struct hashmap_pair*)sp_stack_get(bucket, i);
@@ -60,7 +60,7 @@ int hashmap_get(struct hashmap *hashmap, size_t key)
 
 void hashmap_set(struct hashmap *hashmap, size_t key, int value)
 {
-	size_t idx = hashmap_hash(key) % hashmap->n_buckets;
+	const size_t idx = hashmap_hash(key) % hashmap->n_buckets;
 	struct sp_stack *const bucket = hashmap->buckets[idx];
 
 	for (size_t i = 0; i < bucket->size; i++) {
@@ -79,7 +79,7 @@ void hashmap_set(struct hashmap *hashmap, size_t key, int value)
 
 int hashmap_unset(struct hashmap *hashmap, size_t key)
 {
-	size_t idx = hashmap_hash(key) % hashmap->n_buckets;
+	const size_t idx = hashmap_hash(key) % hashmap->n_buckets;
 	struct sp_stack *const bucket = hashmap->buckets[idx];
 	for (size_t i = 0; i < bucket->size; i++) {
 		struct hashmap_pair pair = *(struct hashmap_pair*)sp_stack_get(bucket, i);
