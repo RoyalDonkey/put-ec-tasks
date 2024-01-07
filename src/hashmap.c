@@ -52,7 +52,7 @@ int hashmap_get(struct hashmap *hashmap, size_t key)
 		if (pair.key == key)
 			return pair.value;
 	}
-	error(("key not found: { (%d;%d), (%d;%d) }", key));
+	error(("key not found: %zu", key));
 }
 
 struct hashmap_pair hashmap_pop_next(struct hashmap *hashmap)
@@ -98,7 +98,7 @@ int hashmap_unset(struct hashmap *hashmap, size_t key)
 			return pair.value;
 		}
 	}
-	error(("key not found: { (%d;%d), (%d;%d) }", key));
+	error(("key not found: %zu", key));
 }
 
 void hashmap_destroy(struct hashmap *hashmap)
