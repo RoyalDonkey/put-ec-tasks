@@ -68,6 +68,7 @@ long tsp_graph_evaluate_move(const struct tsp_graph *graph, struct tsp_move move
 
 void tsp_graph_deactivate_all(struct tsp_graph *graph);
 void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx);
+void tsp_graph_activate_node_by_id(struct tsp_graph *graph, unsigned node_id);
 void tsp_graph_deactivate_random(struct tsp_graph *graph, size_t n_nodes);
 void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes);
 void tsp_graph_deactivate_node(struct tsp_graph *graph, size_t idx);
@@ -120,7 +121,7 @@ void tsp_graph_large_scale_destroy_repair(struct tsp_graph *graph, size_t n_node
 size_t tsp_nodes_compute_similarity_nodes(const struct sp_stack *nodes1, const struct sp_stack *nodes2);
 size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2);
 
-void tsp_graph_init_offspring_common_plus_random(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child);
-void tsp_graph_init_offspring_common_plus_lns_repair(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child);
+struct sp_stack *tsp_nodes_find_common_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2);
+void tsp_graph_activate_common_from_parents(struct tsp_graph *graph, const struct tsp_graph *parent1, const struct tsp_graph *parent2);
 
 #endif /* TSP_GRAPH_H */

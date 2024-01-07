@@ -441,6 +441,30 @@ void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx)
 	sp_stack_push(active, &node);
 }
 
+/* Activates a single node in a graph, by node ID (requires linear search). */
+void tsp_graph_activate_node_by_id(struct tsp_graph *graph, unsigned node_id)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+
+	size_t idx = 0;
+	struct tsp_node node;
+	for (; idx < vacant->size; idx++) {
+		node = *(struct tsp_node*)sp_stack_get(vacant, idx);
+		if (node.id == node_id) {
+			break;
+		}
+	}
+	if (idx == vacant->size) {
+		warn(("No such vacant node in the graph: %u", node_id));
+		return;
+	}
+
+	info(("activated %zu", node_id));
+	sp_stack_qremove(vacant, idx, NULL);
+	sp_stack_push(active, &node);
+}
+
 /* Deactivates a single node in a graph. */
 void tsp_graph_deactivate_node(struct tsp_graph *graph, size_t idx)
 {
@@ -1407,6 +1431,15 @@ size_t _pack_into_size_t(size_t num1, size_t num2)
 	return ((num1) << (size_t_width / 2)) | num2;
 }
 
+/* Unpacks 2 numbers from a `size_t` value. */
+void _unpack_from_size_t(size_t compound, size_t *num1, size_t *num2)
+{
+	const size_t size_t_width = sizeof(size_t) * CHAR_BIT;
+	const size_t all_1s = ~((size_t)0);
+	*num1 = (compound & (all_1s << (size_t_width / 2))) >> (size_t_width / 2);
+	*num2 = (compound & (all_1s >> (size_t_width / 2)));
+}
+
 size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
 {
 	struct hashmap *const hm = hashmap_create(256);
@@ -1432,12 +1465,88 @@ size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const s
 	return sim;
 }
 
-void tsp_graph_init_offspring_common_plus_random(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child)
+struct sp_stack *_find_common_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
 {
-	/* TODO */
+	struct sp_stack *const edges = sp_stack_create(sizeof(size_t), 100);
+	struct hashmap *const hm = hashmap_create(256);
+
+	struct tsp_node prev_node = *(struct tsp_node*)sp_stack_get(nodes1, nodes1->size - 1);
+	for (size_t i = 0; i < nodes1->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes1, i);
+		const size_t edge = _pack_into_size_t(MIN(prev_node.id, node.id), MAX(prev_node.id, node.id));
+		hashmap_set(hm, edge, true);
+		prev_node = node;
+	}
+
+	prev_node = *(struct tsp_node*)sp_stack_get(nodes2, nodes2->size - 1);
+	for (size_t i = 0; i < nodes2->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes2, i);
+		const size_t edge = _pack_into_size_t(MIN(prev_node.id, node.id), MAX(prev_node.id, node.id));
+		if (hashmap_contains_key(hm, edge)) {
+			sp_stack_push(edges, &edge);
+		}
+		prev_node = node;
+	}
+
+	hashmap_destroy(hm);
+	return edges;
 }
 
-void tsp_graph_init_offspring_common_plus_lns_repair(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child)
+/* Populate a child graph with common nodes and edges from 2 parent graphs.
+ * This function assumes parent1, parent2 and child are all graphs of the same solution. */
+void tsp_graph_activate_common_from_parents(struct tsp_graph *graph, const struct tsp_graph *parent1, const struct tsp_graph *parent2)
 {
-	/* TODO */
+	/* A hashset storing IDs of nodes already added to `graph`. */
+	struct hashmap *const added_nodes = hashmap_create(256);
+	/* Ideally `remaining_nodes` would be a hashset of nodes, but I don't feel like implementing it.
+	* Instead, I use a hashmap that maps node IDs to an index in `nodes_bank`. */
+	struct sp_stack *const nodes_bank = sp_stack_create(sizeof(struct tsp_node), 100);
+	struct hashmap *const remaining_nodes = hashmap_create(256);
+
+	/* Populate `remaining_nodes` with nodes present both in parent1 and parent2 */
+	struct hashmap *const p2_nodes = hashmap_create(256);
+	for (size_t i = 0; i < parent2->nodes_active->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(parent2->nodes_active, i);
+		hashmap_set(p2_nodes, node.id, true);
+	}
+	for (size_t i = 0; i < parent1->nodes_active->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(parent1->nodes_active, i);
+		if (hashmap_contains_key(p2_nodes, node.id)) {
+			/* node is present in both parent1 and parent2 */
+			sp_stack_push(nodes_bank, &node);
+			hashmap_set(remaining_nodes, node.id, nodes_bank->size - 1);
+		}
+	}
+	hashmap_destroy(p2_nodes);
+
+	/* Add common edges */
+	struct sp_stack *const common_edges = _find_common_edges(parent1->nodes_active, parent2->nodes_active);
+	while (common_edges->size != 0) {
+		const size_t node_indices = *(size_t*)sp_stack_peek(common_edges);
+		sp_stack_pop(common_edges, NULL);
+
+		size_t n1_idx, n2_idx;
+		_unpack_from_size_t(node_indices, &n1_idx, &n2_idx);
+
+		const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(parent1->nodes_active, n1_idx);
+		const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(parent1->nodes_active, n2_idx);
+		tsp_graph_activate_node_by_id(graph, n1.id);
+		tsp_graph_activate_node_by_id(graph, n2.id);
+
+		hashmap_set(added_nodes, n1.id, true);
+		hashmap_set(added_nodes, n2.id, true);
+		hashmap_unset(remaining_nodes, n1.id);
+		hashmap_unset(remaining_nodes, n2.id);
+	}
+
+	/* Add remaining common nodes */
+	while (remaining_nodes->size != 0) {
+		const struct hashmap_pair pair = hashmap_pop_next(remaining_nodes);
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes_bank, pair.key);
+		tsp_graph_activate_node_by_id(graph, node.id);
+	}
+
+	hashmap_destroy(added_nodes);
+	hashmap_destroy(remaining_nodes);
+	sp_stack_destroy(nodes_bank, NULL);
 }
