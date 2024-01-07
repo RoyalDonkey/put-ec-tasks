@@ -9,6 +9,7 @@
 struct hashmap {
 	struct sp_stack **buckets;
 	size_t n_buckets;
+	size_t size;
 };
 
 struct hashmap_pair {

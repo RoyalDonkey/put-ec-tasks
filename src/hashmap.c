@@ -12,6 +12,7 @@ struct hashmap *hashmap_create(size_t n_buckets)
 	for (size_t i = 0; i < n_buckets; i++)
 		hm->buckets[i] = sp_stack_create(sizeof(struct hashmap_pair), BUCKET_INIT_SIZE);
 	hm->n_buckets = n_buckets;
+	hm->size = 0;
 	return hm;
 }
 
@@ -27,6 +28,7 @@ void hashmap_copy(struct hashmap *dest, struct hashmap *src)
 	for (size_t i = 0; i < src->n_buckets; i++)
 		sp_stack_copy(dest->buckets[i], src->buckets[i], NULL);
 	dest->n_buckets = src->n_buckets;
+	dest->size = src->size;
 }
 
 bool hashmap_contains_key(struct hashmap *hashmap, size_t key)
@@ -55,11 +57,12 @@ int hashmap_get(struct hashmap *hashmap, size_t key)
 
 struct hashmap_pair hashmap_pop_next(struct hashmap *hashmap)
 {
-	if (hashmap->buckets[0]->size == 0) {
+	if (hashmap->size == 0) {
 		error(("hashmap is empty"));
 	}
 	const struct hashmap_pair ret = *(struct hashmap_pair*)sp_stack_peek(hashmap->buckets[0]);
 	sp_stack_popi(hashmap->buckets[0]);
+	--hashmap->size;
 	return ret;
 }
 
@@ -80,6 +83,7 @@ void hashmap_set(struct hashmap *hashmap, size_t key, int value)
 	pair.key = key;
 	pair.value = value;
 	sp_stack_push(bucket, &pair);
+	++hashmap->size;
 }
 
 int hashmap_unset(struct hashmap *hashmap, size_t key)
@@ -90,6 +94,7 @@ int hashmap_unset(struct hashmap *hashmap, size_t key)
 		struct hashmap_pair pair = *(struct hashmap_pair*)sp_stack_get(bucket, i);
 		if (pair.key == key) {
 			sp_stack_qremove(bucket, i, NULL);
+			--hashmap->size;
 			return pair.value;
 		}
 	}
@@ -121,16 +126,15 @@ size_t hashmap_hash(size_t key)
 /* For debugging purposes */
 void hashmap_stats(const struct hashmap *hashmap)
 {
-	size_t n_entries = 0;
 	printf("hashmap stats:\n");
 	printf("- no_buckets: %zu\n", hashmap->n_buckets);
+	printf("- size: %zu\n", hashmap->size);
 	for (size_t i = 0; i < hashmap->n_buckets; i++) {
 		const struct sp_stack *const bucket = hashmap->buckets[i];
 		if (bucket->size == 0)
 			continue;
 		printf("    [%zu]  size: %zu\n", i, bucket->size);
-		n_entries += bucket->size;
 	}
-	printf("- total no. entries: %zu\n", n_entries);
-	printf("- approx. memory usage: %.2lf M\n", n_entries * sizeof(struct hashmap_pair) / (1024. * 1024.));
+	printf("- total no. entries: %zu\n", hashmap->size);
+	printf("- approx. memory usage: %.2lf M\n", hashmap->size * sizeof(struct hashmap_pair) / (1024. * 1024.));
 }
