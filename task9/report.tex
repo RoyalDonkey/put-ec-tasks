@@ -50,7 +50,7 @@
 
 \title{Evolutionary Computation Lab IX}
 \author{Piotr Kaszubski 148283}
-\date{}
+\date{Monday, January  8, 2024}
 
 \begin{document}
 \maketitle
@@ -76,8 +76,95 @@ then only the distance matrix (no nodes coordinates) should be accessed by
 optimization methods to allow instances defined only by distance matrices.
 
 \section{Pseudocode}
+\subsection{Recombination operators}
+Both recombination operators start by initializing an empty child and adding
+\textbf{Common Edges} from both parents to it. Then, the two options are:
+\begin{description}
+	\item [op1] -- fill the remaining nodes randomly,
+	\item [op2] -- fill the remaining nodes using the \emph{greedy cycle}
+		strategy from report 1 (also used in report 7).
+\end{description}
+
+\paragraph{Common Edges algorithm} The algorithm is based on Edge Recombination
+Crossover (ERX) from the lectures, with a small modification:
+\begin{enumerate}
+	\item Select a random node from either parent (that is not already present
+		in the child). If there are no such nodes, terminate.
+	\item Select subsequent elements randomly from a set of all nodes which
+		\textbf{share an edge} with the last selected element in either of the
+		parents. If there are no such nodes, go back to 1.
+\end{enumerate}
+
+\paragraph{Difference with ERX} The lecture slides mention only the
+"subsequent" element, which suggests we consider only one of two adjacent nodes
+per parent. I chose to relax this mechanism, allowing up to 4 continuations per
+iteration, instead of 2. It seemed like a good idea, because a cycle of nodes
+is bidirectional. But I don't know if it actually makes things better or worse.
+At the very least it should reduce the likelihood of premature convergence, I
+suppose.
+
+\subsection{Runtime constraint}
+
+To keep comparisons consistent with previous algorithms, I set the same CPU
+time limit to all the evolutionary methods presented in this report (16.323 CPU
+seconds).
 
 \section{Results}
+
+\begin{longtable}[c]{|c|cc|}
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endfirsthead
+	\hline
+	\multirow{2}*{\textbf{ALG.}} & \textbf{TSPA} & \textbf{TSPC} \\
+	& \textbf{TSPB} & \textbf{TSPD} \\
+	\hline
+	\endhead
+	\multirow{2}*{ls-steepest-random} & 77,866 (75,315--81,017) & 51,453 (49,257--53,785) \\
+	& 71,322 (68,623--76,002) & 48,234 (45,351--51,534) \\
+	\hline
+	\multirow{2}*{lsc-steepest-random} & 89,127 (82,350--101,152) & 62,892 (55,074--74,956) \\
+	& 84,469 (74,393--96,069) & 60,203 (51,897--67,824) \\
+	\hline
+	\multirow{2}*{lsd-steepest-random} & 77,866 (75,315--81,017) & 51,453 (49,257--53,785) \\
+	& 71,322 (68,623--76,002) & 48,234 (45,351--51,534) \\
+	\hline
+	\multirow{2}*{lscd-steepest-random} & 89,127 (82,350--101,152) & 62,892 (55,074--74,956) \\
+	& 84,469 (74,393--96,069) & 60,203 (51,897--67,824) \\
+	\hline
+	\multirow{2}*{msls-steepest-random} & 75,048 (74,178--75,644) & 49,128 (48,311--49,620) \\
+	& 68,211 (67,828--68,622) & 45,649 (45,075--46,032) \\
+	\hline
+	\multirow{2}*{ils-steepest-random} & 74,255 (73,754--74,535) & 48,312 (47,936--48,646) \\
+	& 67,389 (67,008--67,744) & 44,616 (44,105--45,127) \\
+	\hline
+	\multirow{2}*{i$_a$ls-steepest-random} & 74,893 (74,137--75,593) & 48,969 (48,662--49,308) \\
+	& 68,070 (67,676--68,496) & 45,505 (45,016--46,114) \\
+	\hline
+	\hline
+	\multirow{2}*{lsns-nolsearch-from-greedy} & 73,777 (73,061--74,941) & 48,571 (47,475--49,299) \\
+	& 68,001 (66,750--69,953) & 45,345 (44,229--46,356) \\
+	\hline
+	\multirow{2}*{lsns-nolsearch-from-lsearch} & 73,774 (73,221--74,547) & 48,391 (47,514--49,624) \\
+	& 68,217 (66,814--70,149) & 45,249 (43,954--46,160) \\
+	\hline
+	\multirow{2}*{lsns-lsearch-from-greedy} & 73,609 (\textbf{72,859}--74,404) & 48,454 (47,562--49,040) \\
+	& 66,987 (66,755--67,337) & 44,708 (43,869--46,217) \\
+	\hline
+	\multirow{2}*{lsns-lsearch-from-lsearch} & 73,607 (72,967--74,319) & 48,180 (\textbf{47,406}--49,137) \\
+	& 67,112 (\textbf{66,585}--67,673) & 44,574 (\textbf{43,884}--45,715) \\
+	\hline
+	\multirow{2}*{evo-op1} & 75,752 (74,909--76,582) & 49,601 (48,387--50,805) \\
+	& 68,656 (67,989--69,463) & 46,330 (45,247--47,714) \\
+	\hline
+	\multirow{2}*{evo-op2} & 75,766 (74,701--76,827) & 49,712 (48,367--50,408) \\
+	& 68,713 (67,872--69,598) & 46,284 (45,364--47,530) \\
+	\hline
+	\caption{Average, minimum and maximum scores of found solutions}
+\end{longtable}
+
 
 \section{Visualizations}
 
@@ -89,10 +176,40 @@ optimization methods to allow instances defined only by distance matrices.
 \end{figure}%
 }
 
+\subsection{TSPA.csv}
+\visualization{TSPA}{evo-op1}{74,909}
+\visualization{TSPA}{evo-op2}{74,701}
+
+\subsection{TSPB.csv}
+\visualization{TSPB}{evo-op1}{67,989}
+\visualization{TSPB}{evo-op2}{67,872}
+
+\subsection{TSPC.csv}
+\visualization{TSPC}{evo-op1}{48,387}
+\visualization{TSPC}{evo-op2}{48,367}
+
+\subsection{TSPD.csv}
+\visualization{TSPD}{evo-op1}{45,247}
+\visualization{TSPD}{evo-op2}{45,364}
+
 \section{Source code}
 The source code for all the experiments and this report is hosted on GitHub: \\
 \url{https://github.com/RoyalDonkey/put-ec-tasks}
 
 \section{Conclusions}
+
+Evolutionary methods take considerably more effort to implement, and in their
+most basic form perform quite average. However, their major strength is that,
+once the framework has been established, it's relatively easy to swap and
+compare different parameters and components.
+
+I'm surprised that \textbf{op1} and \textbf{op2} performed pretty much the
+same. I was expecting \textbf{op2} to be at least noticeably better. But it's
+possible that this similarity is caused by \textbf{Common Edges} filling up the
+vast majority of children, leaving little difference to be made by random or
+repair operators. If I wasn't running late, I would test this hypothesis, but I
+want to get this report out as soon as possible. Maybe I will find more insight
+for report 10, because I will probably try to develop some kind of hybrid
+evolutionary algorithm for it, basing it off of this report.
 
 \end{document}
