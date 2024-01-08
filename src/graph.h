@@ -59,6 +59,7 @@ void tsp_graph_copy(struct tsp_graph *dest, const struct tsp_graph *src);
 void tsp_graph_destroy(struct tsp_graph *graph);
 void tsp_node_print(struct tsp_node node);
 bool tsp_node_eq(struct tsp_node node1, struct tsp_node node2);
+bool tsp_nodes_eq(const struct sp_stack *nodes1, const struct sp_stack *nodes2);
 void tsp_nodes_print(const struct sp_stack *nodes);
 void tsp_nodes_print_oneline(const struct sp_stack *nodes);
 void tsp_graph_export(const struct tsp_graph *graph, const char *fpath);

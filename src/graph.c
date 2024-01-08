@@ -219,6 +219,51 @@ bool tsp_node_eq(struct tsp_node node1, struct tsp_node node2)
 	return node1.id == node2.id && node1.x == node2.x && node1.y == node2.y && node1.cost == node2.cost;
 }
 
+/* This function assumes nodes1 and nodes2 represent the same problem instances.
+ * i.e. two nodes are considered equal based on their IDs only, for efficiency. */
+bool tsp_nodes_eq(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
+{
+	assert(nodes1 != NULL);
+	assert(nodes2 != NULL);
+	if (nodes1 == nodes2) {
+		return true;
+	}
+	if (nodes1->size != nodes2->size) {
+		return false;
+	}
+
+	/* Align nodes2 index to the first element in nodes1 */
+	size_t nodes1_idx = 0;
+	size_t nodes2_idx;
+	for (nodes2_idx = 0; nodes2_idx < nodes2->size; nodes2_idx++) {
+		const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(nodes1, nodes1_idx);
+		const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(nodes2, nodes2_idx);
+
+		if (n1.id == n2.id) {
+			break;
+		}
+	}
+	if (nodes2_idx == nodes2->size) {
+		/* The first node from nodes1 was not present in nodes2 */
+		return false;
+	}
+
+	/* Compare all elements */
+	for (size_t i = 1; i < nodes1->size; i++) {
+		nodes1_idx = (nodes1_idx + 1) % nodes1->size;
+		nodes2_idx = (nodes2_idx + 1) % nodes2->size;
+
+		const struct tsp_node n1 = *(struct tsp_node*)sp_stack_get(nodes1, nodes1_idx);
+		const struct tsp_node n2 = *(struct tsp_node*)sp_stack_get(nodes2, nodes2_idx);
+
+		if (n1.id != n2.id) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void tsp_nodes_print(const struct sp_stack *nodes)
 {
 	printf("%zu nodes:\n", nodes->size);
