@@ -70,6 +70,7 @@ long tsp_graph_evaluate_move(const struct tsp_graph *graph, struct tsp_move move
 
 void tsp_graph_deactivate_all(struct tsp_graph *graph);
 void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx);
+void tsp_graph_activate_node_by_id(struct tsp_graph *graph, unsigned node_id);
 void tsp_graph_deactivate_random(struct tsp_graph *graph, size_t n_nodes);
 void tsp_graph_activate_random(struct tsp_graph *graph, size_t n_nodes);
 void tsp_graph_deactivate_node(struct tsp_graph *graph, size_t idx);

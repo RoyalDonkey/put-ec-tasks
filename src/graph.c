@@ -499,6 +499,29 @@ void tsp_graph_activate_node(struct tsp_graph *graph, size_t idx)
 	sp_stack_push(active, &node);
 }
 
+/* Activates a single node in a graph, by node ID (requires linear search). */
+void tsp_graph_activate_node_by_id(struct tsp_graph *graph, unsigned node_id)
+{
+	struct sp_stack *const vacant = graph->nodes_vacant;
+	struct sp_stack *const active = graph->nodes_active;
+
+	size_t idx = 0;
+	struct tsp_node node;
+	for (; idx < vacant->size; idx++) {
+		node = *(struct tsp_node*)sp_stack_get(vacant, idx);
+		if (node.id == node_id) {
+			break;
+		}
+	}
+	if (idx == vacant->size) {
+		warn(("No such vacant node in the graph: %u", node_id));
+		return;
+	}
+
+	sp_stack_qremove(vacant, idx, NULL);
+	sp_stack_push(active, &node);
+}
+
 /* Deactivates a single node in a graph. */
 void tsp_graph_deactivate_node(struct tsp_graph *graph, size_t idx)
 {
