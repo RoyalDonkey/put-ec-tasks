@@ -127,8 +127,12 @@ void offspring_func_fill_repair(struct tsp_graph *graph, const struct tsp_graph 
 	assert(parent1->nodes_active->size == parent2->nodes_active->size);
 	tsp_graph_deactivate_all(graph);
 	tsp_graph_activate_common_from_parents(graph, parent1, parent2);
-	if (graph->nodes_active->size < parent1->nodes_active->size) {
-		/* TODO */
+	while (graph->nodes_active->size < parent1->nodes_active->size) {
+		struct tsp_node node;
+		const struct tsp_move move = tsp_graph_find_nc(graph);
+		node = *(struct tsp_node*)sp_stack_get(graph->nodes_vacant, move.src);
+		sp_stack_remove(graph->nodes_vacant, move.src, NULL);
+		sp_stack_insert(graph->nodes_active, move.dest, &node);
 	}
 	assert(graph->nodes_active->size == parent1->nodes_active->size);
 }
@@ -267,7 +271,7 @@ int main(void)
 	}
 
 	run_evolutionary_algorithm("evo-op1", POPULATION_SIZE, offspring_func_fill_random);
-	/* run_evolutionary_algorithm("evo-op2", POPULATION_SIZE, offspring_func_fill_repair); */
+	run_evolutionary_algorithm("evo-op2", POPULATION_SIZE, offspring_func_fill_repair);
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		sp_stack_destroy(nodes[i], NULL);
