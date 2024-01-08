@@ -1523,14 +1523,14 @@ size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const s
 }
 
 /* Finds random node from parent which does not exist in an external graph
- * represented by the node_in_graph lookup hashset.
+ * represented by the node_in_graph lookup table.
  *
  * haystack is an auxiliary buffer for shuffling parent nodes. Since this
  * function might get called repeatedly a lot, it's more efficient to allocate
  * this stack externally and reuse it.
  *
  * Returns address to the node (within parent_nodes), or NULL if not found. */
-struct tsp_node *_find_starting_node(const struct sp_stack *parent_nodes, struct hashmap *node_in_graph, struct sp_stack *haystack)
+struct tsp_node *_find_starting_node(const struct sp_stack *parent_nodes, const bool *node_in_graph, struct sp_stack *haystack)
 {
 	struct tsp_node *ret = NULL;
 	sp_stack_copy(haystack, parent_nodes, NULL);
@@ -1542,7 +1542,7 @@ struct tsp_node *_find_starting_node(const struct sp_stack *parent_nodes, struct
 		}
 		ret = (struct tsp_node*)sp_stack_peek(haystack);
 		sp_stack_pop(haystack, NULL);
-	} while (hashmap_contains_key(node_in_graph, ret->id));
+	} while (node_in_graph[ret->id]);
 
 	return ret;
 }
@@ -1562,16 +1562,16 @@ size_t _find_node(const struct sp_stack *nodes, unsigned node_id)
 	return SIZE_MAX;
 }
 
-void _push_neighboring_nodes_if_not_in_graph(struct sp_stack *dest, const struct sp_stack *parent_nodes, size_t node_idx, const struct hashmap *node_in_graph)
+void _push_neighboring_nodes_if_not_in_graph(struct sp_stack *dest, const struct sp_stack *parent_nodes, size_t node_idx, const bool *node_in_graph)
 {
 	const size_t node_neighbor_next_idx = (node_idx + 1) % parent_nodes->size;
 	const size_t node_neighbor_prev_idx = (node_idx + parent_nodes->size - 1) % parent_nodes->size;
 	const unsigned node_neighbor_next_id = ((struct tsp_node*)sp_stack_get(parent_nodes, node_neighbor_next_idx))->id;
 	const unsigned node_neighbor_prev_id = ((struct tsp_node*)sp_stack_get(parent_nodes, node_neighbor_prev_idx))->id;
-	if (!hashmap_contains_key(node_in_graph, node_neighbor_next_id)) {
+	if (!node_in_graph[node_neighbor_next_id]) {
 		sp_stack_pushui(dest, node_neighbor_next_id);
 	}
-	if (!hashmap_contains_key(node_in_graph, node_neighbor_prev_id)) {
+	if (!node_in_graph[node_neighbor_prev_id]) {
 		sp_stack_pushui(dest, node_neighbor_prev_id);
 	}
 }
@@ -1583,10 +1583,10 @@ void tsp_graph_activate_common_from_parents(struct tsp_graph *graph, const struc
 	assert(parent1->nodes_active->size == parent2->nodes_active->size);
 
 	/* Keep a quick lookup table for nodes present in graph */
-	struct hashmap *const node_in_graph = hashmap_create(TSP_MAX_NODE_ID);
+	bool *const node_in_graph = calloc_or_die((TSP_MAX_NODE_ID + 1) * sizeof(bool));
 	for (size_t i = 0; i < graph->nodes_active->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(graph->nodes_active, i);
-		hashmap_set(node_in_graph, node.id, true);
+		node_in_graph[node.id] = true;
 	}
 
 	/* Auxiliary stack for shuffling and drawing random nodes */
@@ -1621,7 +1621,7 @@ void tsp_graph_activate_common_from_parents(struct tsp_graph *graph, const struc
 		unsigned prev_node_id = prev_node->id;
 		prev_node = NULL;  /* No longer needed */
 		tsp_graph_activate_node_by_id(graph, prev_node_id);
-		hashmap_set(node_in_graph, prev_node_id, true);
+		node_in_graph[prev_node_id] = true;
 
 		/* Append node which follows prev_node_id in a random parent */
 		while (graph->nodes_active->size < parent1->nodes_active->size) {
@@ -1648,12 +1648,12 @@ void tsp_graph_activate_common_from_parents(struct tsp_graph *graph, const struc
 			/* Draw random next_node, add it to graph and update prev_node */
 			const unsigned next_node_id = sp_stack_getui(next_candidates, randint(0, next_candidates->size - 1));
 			tsp_graph_activate_node_by_id(graph, next_node_id);
-			hashmap_set(node_in_graph, next_node_id, true);
+			node_in_graph[next_node_id] = true;
 			prev_node_id = next_node_id;
 		}
 	}
 
 	sp_stack_destroy(haystack, NULL);
 	sp_stack_destroy(next_candidates, NULL);
-	hashmap_destroy(node_in_graph);
+	free(node_in_graph);
 }
