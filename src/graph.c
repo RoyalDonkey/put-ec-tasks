@@ -1465,17 +1465,17 @@ void tsp_graph_large_scale_destroy_repair(struct tsp_graph *graph, size_t n_node
 
 size_t tsp_nodes_compute_similarity_nodes(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
 {
-	struct hashmap *const hm = hashmap_create(256);
+	bool *const node_in_nodes1 = calloc_or_die((TSP_MAX_NODE_ID + 1) * sizeof(bool));
 	size_t sim = 0;
 	for (size_t i = 0; i < nodes1->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes1, i);
-		hashmap_set(hm, node.id, true);
+		node_in_nodes1[node.id] = true;
 	}
 	for (size_t i = 0; i < nodes2->size; i++) {
 		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(nodes2, i);
-		sim += hashmap_contains_key(hm, node.id);
+		sim += node_in_nodes1[node.id] ? 1 : 0;
 	}
-	hashmap_destroy(hm);
+	free(node_in_nodes1);
 	return sim;
 }
 
@@ -1486,6 +1486,15 @@ size_t _pack_into_size_t(size_t num1, size_t num2)
 	assert(num1 == (num1 << (size_t_width / 2)) >> (size_t_width / 2));
 	assert(num2 == (num2 << (size_t_width / 2)) >> (size_t_width / 2));
 	return ((num1) << (size_t_width / 2)) | num2;
+}
+
+/* Unpacks 2 numbers from a `size_t` value. */
+void _unpack_from_size_t(size_t compound, size_t *num1, size_t *num2)
+{
+	const size_t size_t_width = sizeof(size_t) * CHAR_BIT;
+	const size_t all_1s = ~((size_t)0);
+	*num1 = (compound & (all_1s << (size_t_width / 2))) >> (size_t_width / 2);
+	*num2 = (compound & (all_1s >> (size_t_width / 2)));
 }
 
 size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const struct sp_stack *nodes2)
@@ -1513,12 +1522,138 @@ size_t tsp_nodes_compute_similarity_edges(const struct sp_stack *nodes1, const s
 	return sim;
 }
 
-void tsp_graph_init_offspring_common_plus_random(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child)
+/* Finds random node from parent which does not exist in an external graph
+ * represented by the node_in_graph lookup hashset.
+ *
+ * haystack is an auxiliary buffer for shuffling parent nodes. Since this
+ * function might get called repeatedly a lot, it's more efficient to allocate
+ * this stack externally and reuse it.
+ *
+ * Returns address to the node (within parent_nodes), or NULL if not found. */
+struct tsp_node *_find_starting_node(const struct sp_stack *parent_nodes, struct hashmap *node_in_graph, struct sp_stack *haystack)
 {
-	/* TODO */
+	struct tsp_node *ret = NULL;
+	sp_stack_copy(haystack, parent_nodes, NULL);
+
+	tail_shuffle(haystack->data, haystack->elem_size, haystack->size, haystack->size - 1);
+	do {
+		if (haystack->size == 0) {
+			return NULL;
+		}
+		ret = (struct tsp_node*)sp_stack_peek(haystack);
+		sp_stack_pop(haystack, NULL);
+	} while (hashmap_contains_key(node_in_graph, ret->id));
+
+	return ret;
 }
 
-void tsp_graph_init_offspring_common_plus_lns_repair(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child)
+/* Finds the node that follows a given node in a solution.
+ *
+ * Returns index of the node or SIZE_MAX if not found. */
+size_t _find_node(const struct sp_stack *nodes, unsigned node_id)
 {
-	/* TODO */
+	/* Locate node with ID equal to node_id */
+	for (size_t i = 0; i < nodes->size; i++) {
+		struct tsp_node *const node = sp_stack_get(nodes, i);
+		if (node->id == node_id) {
+			return i;
+		}
+	}
+	return SIZE_MAX;
+}
+
+void _push_neighboring_nodes_if_not_in_graph(struct sp_stack *dest, const struct sp_stack *parent_nodes, size_t node_idx, const struct hashmap *node_in_graph)
+{
+	const size_t node_neighbor_next_idx = (node_idx + 1) % parent_nodes->size;
+	const size_t node_neighbor_prev_idx = (node_idx + parent_nodes->size - 1) % parent_nodes->size;
+	const unsigned node_neighbor_next_id = ((struct tsp_node*)sp_stack_get(parent_nodes, node_neighbor_next_idx))->id;
+	const unsigned node_neighbor_prev_id = ((struct tsp_node*)sp_stack_get(parent_nodes, node_neighbor_prev_idx))->id;
+	if (!hashmap_contains_key(node_in_graph, node_neighbor_next_id)) {
+		sp_stack_pushui(dest, node_neighbor_next_id);
+	}
+	if (!hashmap_contains_key(node_in_graph, node_neighbor_prev_id)) {
+		sp_stack_pushui(dest, node_neighbor_prev_id);
+	}
+}
+
+/* Populate a child graph with common nodes and edges from 2 parent graphs.
+ * This function assumes parent1, parent2 and child are all graphs of the same solution. */
+void tsp_graph_activate_common_from_parents(struct tsp_graph *graph, const struct tsp_graph *parent1, const struct tsp_graph *parent2)
+{
+	assert(parent1->nodes_active->size == parent2->nodes_active->size);
+
+	/* Keep a quick lookup table for nodes present in graph */
+	struct hashmap *const node_in_graph = hashmap_create(TSP_MAX_NODE_ID);
+	for (size_t i = 0; i < graph->nodes_active->size; i++) {
+		const struct tsp_node node = *(struct tsp_node*)sp_stack_get(graph->nodes_active, i);
+		hashmap_set(node_in_graph, node.id, true);
+	}
+
+	/* Auxiliary stack for shuffling and drawing random nodes */
+	struct sp_stack *const haystack = sp_stack_create(sizeof(struct tsp_node), parent1->nodes_active->size);
+
+	/* Auxiliary stack for picking a random out of up to 4 node IDs */
+	struct sp_stack *const next_candidates = sp_stack_create(sizeof(unsigned), 4);
+
+	while (graph->nodes_active->size < parent1->nodes_active->size) {
+		struct tsp_node *prev_node = NULL;
+		int parent_choice;
+
+		/* Find a random starting node from either parent */
+		parent_choice = randint(1, 2);
+		if (parent_choice == 1) {
+			prev_node = _find_starting_node(parent1->nodes_active, node_in_graph, haystack);
+			if (prev_node == NULL) {
+				prev_node = _find_starting_node(parent2->nodes_active, node_in_graph, haystack);
+			}
+		} else if (parent_choice == 2) {
+			prev_node = _find_starting_node(parent2->nodes_active, node_in_graph, haystack);
+			if (prev_node == NULL) {
+				prev_node = _find_starting_node(parent1->nodes_active, node_in_graph, haystack);
+			}
+		}
+		if (prev_node == NULL) {
+			/* No starting nodes left */
+			break;
+		}
+
+		/* Add starting node to graph */
+		unsigned prev_node_id = prev_node->id;
+		prev_node = NULL;  /* No longer needed */
+		tsp_graph_activate_node_by_id(graph, prev_node_id);
+		hashmap_set(node_in_graph, prev_node_id, true);
+
+		/* Append node which follows prev_node_id in a random parent */
+		while (graph->nodes_active->size < parent1->nodes_active->size) {
+			int parent_order[2];
+
+			parent_order[0] = randint(1, 2);
+			parent_order[1] = parent_order[0] == 1 ? 2 : 1;
+			sp_stack_clear(next_candidates, NULL);
+			for (int i = 0; i < 2; i++) {
+				const struct sp_stack *const parent_nodes = (parent_order[i] == 1 ? parent1 : parent2)->nodes_active;
+				size_t node_idx = _find_node(parent_nodes, prev_node_id);
+				if (node_idx == SIZE_MAX) {
+					/* Previous node must have come from the other parent, and this parent doesn't contain it */
+					continue;
+				}
+				_push_neighboring_nodes_if_not_in_graph(next_candidates, parent_nodes, node_idx, node_in_graph);
+			}
+			assert(next_candidates->size <= 4);
+			if (next_candidates->size == 0) {
+				/* No continuing nodes left */
+				break;
+			}
+
+			/* Draw random next_node, add it to graph and update prev_node */
+			const unsigned next_node_id = sp_stack_getui(next_candidates, randint(0, next_candidates->size - 1));
+			tsp_graph_activate_node_by_id(graph, next_node_id);
+			hashmap_set(node_in_graph, next_node_id, true);
+			prev_node_id = next_node_id;
+		}
+	}
+
+	sp_stack_destroy(haystack, NULL);
+	sp_stack_destroy(next_candidates, NULL);
+	hashmap_destroy(node_in_graph);
 }

@@ -7,7 +7,7 @@
 #include <float.h>
 
 /* Typedefs */
-typedef void (*offspring_func_t)(const struct tsp_graph *parent1, const struct tsp_graph *parent2, struct tsp_graph *child);
+typedef void (*offspring_func_t)(struct tsp_graph *child, const struct tsp_graph *parent1, const struct tsp_graph *parent2);
 
 /* Auxiliary struct for defining intra moves */
 #define MOVE_TYPE_NODES 0  /* intra-route node swap */
@@ -111,6 +111,28 @@ void lsearch_greedy(struct tsp_graph *graph)
 	sp_stack_destroy(all_moves, NULL);
 }
 
+void offspring_func_fill_random(struct tsp_graph *graph, const struct tsp_graph *parent1, const struct tsp_graph *parent2)
+{
+	assert(parent1->nodes_active->size == parent2->nodes_active->size);
+	tsp_graph_deactivate_all(graph);
+	tsp_graph_activate_common_from_parents(graph, parent1, parent2);
+	if (graph->nodes_active->size < parent1->nodes_active->size) {
+		tsp_graph_activate_random(graph, parent1->nodes_active->size - graph->nodes_active->size);
+	}
+	assert(graph->nodes_active->size == parent1->nodes_active->size);
+}
+
+void offspring_func_fill_repair(struct tsp_graph *graph, const struct tsp_graph *parent1, const struct tsp_graph *parent2)
+{
+	assert(parent1->nodes_active->size == parent2->nodes_active->size);
+	tsp_graph_deactivate_all(graph);
+	tsp_graph_activate_common_from_parents(graph, parent1, parent2);
+	if (graph->nodes_active->size < parent1->nodes_active->size) {
+		/* TODO */
+	}
+	assert(graph->nodes_active->size == parent1->nodes_active->size);
+}
+
 void run_evolutionary_algorithm(const char *label, size_t population_size, offspring_func_t offspring_func)
 {
 	const clock_t timeout_cycles = (TIMEOUT_MS / 1000.0) * CLOCKS_PER_SEC;
@@ -161,7 +183,13 @@ void run_evolutionary_algorithm(const char *label, size_t population_size, offsp
 
 					/* Create and evaluate child */
 					tsp_graph_deactivate_all(child);
-					offspring_func(parent1, parent2, child);
+					offspring_func(child, parent1, parent2);
+					for (size_t l = 0; l < population_size; l++) {
+						if (tsp_nodes_eq(child->nodes_active, population[l]->nodes_active)) {
+							/* This solution already exists in the population */
+							goto skip_to_next_child;
+						}
+					}
 					const unsigned long child_score = tsp_nodes_evaluate(child->nodes_active, &child->dist_matrix);
 
 					/* Find the worst solution in the population */
@@ -179,6 +207,8 @@ void run_evolutionary_algorithm(const char *label, size_t population_size, offsp
 					if (child_score < worst_score) {
 						tsp_graph_copy(population[worst_idx], child);
 					}
+
+					skip_to_next_child: ;
 				}
 				tsp_graph_destroy(child);
 			}
@@ -236,8 +266,8 @@ int main(void)
 		nodes[i] = tsp_nodes_read(nodes_files[i]);
 	}
 
-	run_evolutionary_algorithm("evo-op1", POPULATION_SIZE, tsp_graph_init_offspring_common_plus_random);
-	run_evolutionary_algorithm("evo-op2", POPULATION_SIZE, tsp_graph_init_offspring_common_plus_lns_repair);
+	run_evolutionary_algorithm("evo-op1", POPULATION_SIZE, offspring_func_fill_random);
+	/* run_evolutionary_algorithm("evo-op2", POPULATION_SIZE, offspring_func_fill_repair); */
 
 	for (size_t i = 0; i < ARRLEN(nodes_files); i++) {
 		sp_stack_destroy(nodes[i], NULL);
