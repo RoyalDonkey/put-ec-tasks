@@ -226,6 +226,19 @@ void tsp_nodes_print(const struct sp_stack *nodes)
 	printf("score: %lu\n", tsp_nodes_evaluate(nodes, NULL));
 }
 
+void tsp_nodes_print_oneline(const struct sp_stack *nodes)
+{
+	if (nodes->size == 0) {
+		printf("<empty>\n");
+		return;
+	}
+	for (size_t i = 0; i < nodes->size - 1; i++) {
+		const struct tsp_node *const node = sp_stack_get(nodes, i);
+		printf("%u → ", node->id);
+	}
+	printf("%u\n", ((struct tsp_node*)sp_stack_peek(nodes))->id);
+}
+
 void tsp_graph_export(const struct tsp_graph *graph, const char *fpath)
 {
 	struct sp_stack *const vacant = graph->nodes_vacant;
