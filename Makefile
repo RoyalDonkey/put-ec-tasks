@@ -13,7 +13,7 @@ OBJS := $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SRCS:.c=.o))
 LIBTSP = libtsp.a
 LIBSTAPLE = libstaple/libstaple.a
 LIBGNUPLOT_I = gnuplot_i/gnuplot_i.o
-TASKS = task1 task2 task3 task4 task5 task6 task7 task8 task9
+TASKS = task1 task2 task3 task4 task5 task6 task7 task8 task9 task10
 
 .PHONY: directories all clean debug profile fast
 
